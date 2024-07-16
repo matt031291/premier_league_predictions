@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome, {{ username }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .user-info {
+            margin-bottom: 20px;
+        }
+        .teams-form {
+            margin-top: 20px;
+        }
+        .teams-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .team-item {
+            margin-bottom: 10px;
+        }
+        .team-label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px; /* Added margin bottom */
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        .logout-link {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ username }}</h1>
+        
+        <div class="user-info">
+            <p>Your Score: {{ score }}</p>
+            <p>Your Gold: {{ gold }}</p>
+            <p>Your Team Choice: {% if team_choice %}{{ team_choice }}{% else %}None{% endif %}</p>
+            <p>Your Locked Team Choice: {{ locked_team_choice }}</p>
+        </div>
+
+        <h2>Available Teams:</h2>
+        <form action="{{ url_for('choose_team') }}" method="POST" class="teams-form">
+            <ul class="teams-list">
+                {% for team, cost in teams.items() %}
+                    <li class="team-item">
+                        <label class="team-label">
+                            <input type="radio" name="team" value="{{ team }}"> {{ team }} - {{ cost }} gold
+                        </label>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <input type="submit" value="Select Team" class="submit-btn">
+        </form>
+
+        <form action="{{ url_for('show_scores') }}">
+            <input type="submit" value="Show Scores" class="submit-btn">
+        </form>
+    
+        <form action="{{ url_for('show_leagues', username=username) }}">
+            <input type="submit" value="Show Leauges" class="submit-btn">
+        </form>
+
+        <form action="{{ url_for('previous_results', username=username) }}">
+            <input type="submit" value="Show Previous Results" class="submit-btn">
+        </form>
+
+        <h2>Join a League</h2>
+        <form action="{{ url_for('join_league') }}" method="POST" class="teams-form">
+            <label for="league_name">League Name:</label><br>
+            <input type="text" id="league_name" name="league_name" required><br><br>
+            <label for="league_password">League Password:</label><br>
+            <input type="password" id="league_password" name="league_password" required><br><br>
+            <input type="submit" value="Join League" class="submit-btn">
+        </form>
+
+        <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+    </div>
+</body>
+</html>

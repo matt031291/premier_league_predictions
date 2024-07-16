@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"], input[type="submit"] {
+            display: block;
+            margin-bottom: 10px;
+            padding: 8px;
+            width: 300px;
+        }
+        input[type="submit"] {
+            width: auto;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        p {
+            margin-top: 20px;
+        }
+        a {
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome Admin</h1>
+    
+    <p>Use the button below to generate new teams for the game week:</p>
+    <form action="{{ url_for('generate_teams') }}" method="POST">
+        <input type="submit" value="Generate New Teams">
+    </form>
+    
+    <p>Use the button below to update scores:</p>
+    <form action="{{ url_for('update_scores_route') }}" method="POST">
+        <input type="submit" value="Update Scores">
+    </form>
+
+    <p>Use the button below to lock team choices:</p>
+    <form action="{{ url_for('lock_team_choices_route') }}" method="POST">
+        <input type="submit" value="Lock Team Choices">
+    </form>
+    
+    <h2>Create New League</h2>
+    <form action="{{ url_for('create_league') }}" method="POST">
+        <label for="league_name">League Name:</label>
+        <input type="text" id="league_name" name="league_name" required>
+        
+        <label for="league_password">League Password:</label>
+        <input type="password" id="league_password" name="league_password" required>
+        
+        <input type="submit" value="Create League">
+    </form>
+    
+    <p><a href="{{ url_for('logout') }}">Logout</a></p>
+</body>
+</html>
