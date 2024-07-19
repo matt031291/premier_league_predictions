@@ -38,6 +38,7 @@
                     <th>Username</th>
                     <th>Score</th>
                     <th>Gold</th>
+                    <th>Locked Team</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,6 +47,7 @@
                     <td>{{ user.username }}</td>
                     <td>{{ user.score }}</td>
                     <td>{{ user.gold }}</td>
+                    <td>{{user.locked_team_choice}}</td>
                 </tr>
                 {% endfor %}
             </tbody>
