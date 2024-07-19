@@ -4,6 +4,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 import random 
 import json
+import os
 from scraper import get_gameweek_teams, get_results
 
 app = Flask(__name__)
