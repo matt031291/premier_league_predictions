@@ -428,35 +428,6 @@ def create_league():
     return redirect(url_for('admin'))
 
 
-To resolve the error related to port binding on Render, make sure your Flask app binds to 0.0.0.0 and uses the port specified by the PORT environment variable. Here’s how to adjust your app.py and Procfile:
-
-Update app.py
-Ensure your app binds to 0.0.0.0 and the correct port:
-
-python
-Copy code
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-app = Flask(__name__)
-app.config.from_object('config.Config')
-
-db = SQLAlchemy(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-# Define your User model and other models here
-
-def create_database():
-    """Create the database and tables."""
-    with app.app_context():
-        db.create_all()
-
 if __name__ == '__main__':
     create_database()
     port = int(os.environ.get("PORT", 5000))
