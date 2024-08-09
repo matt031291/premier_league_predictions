@@ -132,27 +132,18 @@ def read_current_gameweek_teams():
     else:
         return {}
 
-# Function to get new game week teams
-def get_new_gameweek_teams():
-    teams = {
-        'Man City': random.randint(15, 20),
-        'Tottenham': random.randint(10, 14),
-        'Leicester City': random.randint(1, 5)
-    }
-    #update_gameweek_teams(teams)
-
-def get_winner():
-    teams = {
-        'Man City': 1,
-        'Tottenham': 0,
-        'Leicester City': 3
-    }
-    return teams
 
 def lock_team_choices():
     users = User.query.all()
+    teams = read_current_gameweek_teams()
     for user in users:
-        user.locked_team_choice = user.team_choice
+        if user.team_choice is not None:
+            user.locked_team_choice = user.team_choice
+        else:
+            for key, value in teams.items():
+            if value == 10:
+                user.locked_team_choice = key
+                break
         ## Option to add strategies
         user.team_choice = None
     teams = {}
