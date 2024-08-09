@@ -141,9 +141,9 @@ def lock_team_choices():
             user.locked_team_choice = user.team_choice
         else:
             for key, value in teams.items():
-            if value == 10:
-                user.locked_team_choice = key
-                break
+                if value == 10:
+                    user.locked_team_choice = key
+                    break
         ## Option to add strategies
         user.team_choice = None
     teams = {}
