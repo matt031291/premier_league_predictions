@@ -9,6 +9,7 @@ def fetch_data_fixtures(soup):
     data=[]
     keep_searching = False
     for row in rows:
+        print (row)
         if 'Round' in row.text:
             keep_searching = not keep_searching
         if not keep_searching:
