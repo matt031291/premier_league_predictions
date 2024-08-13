@@ -9,11 +9,12 @@ def fetch_data_fixtures(soup):
     data=[]
     keep_searching = False
     for row in rows:
-        print (row)
         if 'Round' in row.text:
             keep_searching = not keep_searching
         if not keep_searching:
-            break
+            df = pd.DataFrame(data,columns=["1","X","2","Date","Match","-","-","-","-","-"])
+            return df[['Date','Match','1','X','2']]
+
         utils = []
         cols = row.find_all('td')
         utils = [button['data-odd'] for button in row.find_all('button')]
@@ -30,15 +31,19 @@ def fetch_data_fixtures(soup):
                 utils.append(element.text)
         if len(utils) == 10:
             data.append(utils)
+    df = pd.DataFrame(data,columns=["1","X","2","Date","Match","-","-","-","-","-"])
+    return df[['Date','Match','1','X','2']]
 
 def get_teams(match):
     home,away = match.strip(' ').split('-')
     return home,away
 
 def get_gameweek_teams():
+    print (1111111)
     URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
+    print (22222222)
     soup = BeautifulSoup(response.text, 'html.parser')
     data = fetch_data_fixtures(soup)
     data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
@@ -57,6 +62,7 @@ def get_gameweek_teams():
     ordered_list = list(sorted_odds.keys())
     L =  (20-len(ordered_list))/2
     return {ordered_list[i].strip():20-i-L for i in range(len(ordered_list))}
+
 
 
 def get_result_points_home(result_str):
