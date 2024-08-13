@@ -7,7 +7,12 @@ def fetch_data_fixtures(soup):
     data = []
     rows = table_matches.find_all('tr')
     data=[]
+    keep_searching = False
     for row in rows:
+        if 'Round' in row.text:
+            keep_searching = not keep_searching
+        if not keep_searching:
+            break
         utils = []
         cols = row.find_all('td')
         utils = [button['data-odd'] for button in row.find_all('button')]
@@ -24,11 +29,6 @@ def fetch_data_fixtures(soup):
                 utils.append(element.text)
         if len(utils) == 10:
             data.append(utils)
-
-
-
-    df = pd.DataFrame(data,columns=["1","X","2","Date","Match","-","-","-","-","-"])
-    return df[['Date','Match','1','X','2']]
 
 def get_teams(match):
     home,away = match.strip(' ').split('-')
