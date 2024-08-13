@@ -35,8 +35,8 @@ def get_teams(match):
     return home,away
 
 def get_gameweek_teams():
-    #URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
-    URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
+    URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
+    #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
     data = fetch_data_fixtures(soup)
@@ -107,7 +107,7 @@ def fetch_data_results(soup):
     return df
 
 def get_results():
-    URL = "https://www.betexplorer.com/football/sweden/allsvenskan/results/"
+    URL = "https://www.betexplorer.com/football/england/premier-league/results/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
 
