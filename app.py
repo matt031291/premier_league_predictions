@@ -232,6 +232,12 @@ def signup():
 
     return render_template('signup.html')
 
+@app.route('/keep-alive')
+def keep_alive():
+    # Any code you want to execute when this endpoint is hit
+    print("Keep-alive endpoint was accessed")
+    return "I'm alive!", 200
+
 @app.route('/logout')
 @login_required
 def logout():
