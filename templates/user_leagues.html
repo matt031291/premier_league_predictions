@@ -53,10 +53,9 @@
         <ul class="league-list">
             {% for league_id in league_ids %}
                 <li class="league-item">
-                    <form action="/view_teams_in_league" method="POST">
-                        <input type="hidden" name="league_id" value="{{ league_id }}">
-                        <button type="submit" class="league-button">League {{ league_id }}</button>
-                    </form>
+                    <button type="button" class="league-button" onclick="window.location.href='/show_league_scores/{{ league_id }}'">
+                        League {{ league_id }}
+                    </button>
                 </li>
             {% endfor %}
         </ul>

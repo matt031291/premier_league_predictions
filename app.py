@@ -384,11 +384,14 @@ def lock_team_choices_route():
 
     return redirect(url_for('admin'))
 
-@app.route('/show_league_scores/<league_name>')
+@app.route('/show_league_scores/<league_id>')
 @login_required
-def show_league_scores(league_name):
-    league = League.query.filter_by(neam=league_name).first()
-    users = league.user_ids
+def show_league_scores(league_id):
+    league = League.query.filter_by(id = league_id).first()
+    user_ids = json.loads(league.user_ids)
+    print (user_ids, type(user_ids))
+    users = [User.query.get(user_id) for user_id in user_ids]
+    print (users)
     return render_template('scores.html', users=users)
 
 
@@ -397,6 +400,7 @@ def show_league_scores(league_name):
 @login_required
 def show_scores():
     users = User.query.all()  # Fetch all users
+    print (type(users[0]))
     return render_template('scores.html', users=users)
 
 @app.route('/show_leagues/<username>')
