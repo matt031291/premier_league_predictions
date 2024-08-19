@@ -142,6 +142,7 @@ def lock_team_choices():
         else:
             for key, value in teams.items():
                 if value == 10:
+                    user.gold -= 10
                     user.locked_team_choice = key
                     break
         ## Option to add strategies
