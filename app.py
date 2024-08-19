@@ -384,6 +384,13 @@ def lock_team_choices_route():
 
     return redirect(url_for('admin'))
 
+@app.route('/show_league_scores/<league_name>')
+@login_required
+def show_league_scores(league_name):
+    league = League.query.filter_by(neam=league_name).first()
+    users = league.user_ids
+    return render_template('scores.html', users=users)
+
 
 
 @app.route('/show_scores')
