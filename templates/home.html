@@ -66,15 +66,30 @@
 <body>
     <div class="container">
         <h1>Welcome, {{ username }}</h1>
-        
-        <div class="user-info">
-            <p>Your Score: {{ score }}</p>
-            <p>Your Gold: {{ gold }}</p>
-            <p>Your Team Choice: {% if team_choice %}{{ team_choice }}{% else %}None{% endif %}</p>
-            <p>Your Locked Team Choice: {{ locked_team_choice }}</p>
-        </div>
-
-        <h2>Available Teams:</h2>
+            <p style = "font-size: 0.95em;"> The table below shows your current score, treasure (<i>Gold</i>), and team you are supporting in the next match (<i>Your Team Choice</i>). Remember to lock your chosen team to play. </p>
+    </br>
+    <table>
+        <tr>
+          <td> <span style="font-weight:bold">Your Score:</span></td>
+          <td> {{ score }} </td>
+        </tr>
+        <tr>
+          <td> <span style="font-weight:bold">Your Gold:</span></td>
+          <td> {{ gold }} </td>
+        </tr>
+        <tr>
+            <td> <span style="font-weight:bold">Your Team Choice:</span></td>
+            <td> {% if team_choice %}{{ team_choice }}{% else %}None{% endif %} </td>
+          </tr>
+          <tr>
+            <td> <span style="font-weight:bold">Your Locked Team Choice:</span></td>
+            <td> {{ locked_team_choice }} </td>
+          </tr>
+      </table>
+      </br>
+      <p style = "font-size: 0.95em;"> Choose your supported team for the next match. You'll be supporting the first team of the pair that is playing. </p>
+      <p style = "font-size: 0.95em;"> You can choose a league in which to play at the bottom of the app. </p>
+        <h2>Next Matches:</h2>
         <form action="{{ url_for('choose_team') }}" method="POST" class="teams-form">
             <ul class="teams-list">
                 {% for team, cost in teams.items() %}
@@ -94,7 +109,7 @@
         </form>
     
         <form action="{{ url_for('show_leagues', username=username) }}">
-            <input type="submit" value="Show Leauges" class="submit-btn">
+            <input type="submit" value="Show Leagues" class="submit-btn">
         </form>
 
         <form action="{{ url_for('previous_results', username=username) }}">
@@ -102,6 +117,8 @@
         </form>
 
         <h2>Join a League</h2>
+        <p style = "font-size: 0.9em;"> &#9432; What is this? </p>
+        <p style = "font-size: 0.875em;"> <i>Leagues</i> allow you to see the summarised scores for a set of players (those within the same <i>league</i>) </p>
         <form action="{{ url_for('join_league') }}" method="POST" class="teams-form">
             <label for="league_name">League Name:</label><br>
             <input type="text" id="league_name" name="league_name" required><br><br>
