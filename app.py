@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+import numpy as np
 import random 
 import json
 import os
@@ -140,8 +141,9 @@ def lock_team_choices():
         if user.team_choice is not None:
             user.locked_team_choice = user.team_choice
         else:
+            random_value = np.random.randint(1,9)
             for key, value in teams.items():
-                if value == 10:
+                if value == random_value:
                     user.gold -= 10
                     user.locked_team_choice = key
                     break
@@ -154,11 +156,12 @@ def lock_team_choices():
 def update_scores():
     winner_scores = get_results()
     users = User.query.all()
-    print (winner_scores)
     for user in users:
         score_for_round = 0 
         if user.locked_team_choice in winner_scores:
             score_for_round = winner_scores[user.locked_team_choice]
+        if user.locked_team_choice[0:3] == 'Lei':
+            score_for_round += 0.1
         user.score += score_for_round
         user.add_previous_result(user.locked_team_choice, score_for_round)
         user.team_choice = None
