@@ -47,7 +47,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(150), nullable=False)
-    score = db.Column(db.Integer, default=0)
+    score = db.Column(db.Float, default=0.0)
     gold = db.Column(db.Integer, default=380)
     team_choice = db.Column(db.String(50))  # Nullable by default, starts as None
     locked_team_choice = db.Column(db.String(50))
