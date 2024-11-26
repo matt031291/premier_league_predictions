@@ -4,4 +4,3 @@ python3.9 -m venv prem_env
 source prem_env/bin/activate 
 pip install -r requirements.txt
 
-TEST
