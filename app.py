@@ -148,7 +148,11 @@ def lock_team_choices():
     teams = read_current_gameweek_teams()
     for user in users:
         if user.team_choice is not None:
-            user.locked_team_choice = user.team_choice
+            for key, value in teams.items():
+                if key == user.team_choice:
+                    user.gold -= value
+                    user.locked_team_choice = key
+                    break
         else:
             random_value = np.random.randint(1,9)
             for key, value in teams.items():
@@ -216,13 +220,9 @@ def choose_team():
         # Check if selected team exists and user has enough gold
         if team in teams and user.gold >= teams[team]:
             # Return gold from previous pick if changing team choice
-            if user.team_choice:
-                previous_team_cost = teams.get(user.team_choice, 0)
-                user.gold += previous_team_cost
 
             # Update user's team choice and deduct gold for new choice
             user.team_choice = team
-            user.gold -= teams[team]
             db.session.commit()
             flash(f'Team {team} chosen successfully. Gold deducted: {teams[team]}', 'success')
         else:
