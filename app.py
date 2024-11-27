@@ -41,6 +41,7 @@ class League(db.Model):
 class GameWeekTeams(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(db.Text, nullable=False)
+    start_time = db.Column(db.TIMESTAMP)
 
 # User model
 class User(UserMixin, db.Model):
@@ -113,12 +114,12 @@ def load_user(user_id):
         return Admin.query.get(int(user_id))
 
 # Function to update game week teams in DB
-def update_gameweek_teams(data):
+def update_gameweek_teams(data, start_gameweek):
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams:
         gameweek_teams.data = json.dumps(data)
     else:
-        new_gameweek_teams = GameWeekTeams(data=json.dumps(data))
+        new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek)
         db.session.add(new_gameweek_teams)
     db.session.commit()
 
@@ -133,6 +134,10 @@ def read_current_gameweek_teams():
     else:
         return {}
 
+def give_gold(amount):
+    users = User.query.all()
+    for user in users:
+        user.gold += amount
 
 def lock_team_choices():
     users = User.query.all()
@@ -349,9 +354,13 @@ def register():
 @login_required
 def generate_teams():
     if current_user.username == 'admin':
+        if current_user.previous_results is None:
+            round = None
+        else:
+            round = len(current_user.previous_results) +1
         # Example function call to generate new game week teams
-        new_teams = get_gameweek_teams()
-        update_gameweek_teams(new_teams)
+        new_teams, start_gameweek = get_gameweek_teams(round)
+        update_gameweek_teams(new_teams, start_gameweek)
         # Update all users with new teams (example logic)
         users = User.query.all()
         for user in users:

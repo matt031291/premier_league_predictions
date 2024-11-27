@@ -1,51 +1,82 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+from datetime import datetime
 
-def fetch_data_fixtures(soup):
+def fetch_data_fixtures(soup, round ):
     table_matches = soup.find('table')#, attrs={'class':'table-main js-tablebanner-t js-tablebanner-ntb'})
     data = []
     rows = table_matches.find_all('tr')
     data=[]
     keep_searching = False
+    start_searching = False
+    if round is None:
+        round = 13 #This needs to be changed for testing to most recent round
     for row in rows:
-        if 'Round' in row.text:
-            keep_searching = not keep_searching
-        if not keep_searching:
-            df = pd.DataFrame(data,columns=["1","X","2","Date","Match","-","-","-","-","-"])
-            return df[['Date','Match','1','X','2']]
+        if 'Round' in row.text and str(round)+'.' in row.text:
+            start_searching = True
+        if start_searching:
+            if 'Round' in row.text and str(round+1)+'.' in row.text:
+                df = pd.DataFrame(data,columns=["1","X","2","Date","Match","-","-","-","-","-"])
+                return df[['Date','Match','1','X','2']]
 
-        utils = []
-        cols = row.find_all('td')
-        utils = [button['data-odd'] for button in row.find_all('button')]
-        # Extract fixture name
-        for element in cols:
-            try:
-                # Store the odds that win and didnt win
-                if 'data-odd' in element.attrs:
-                    pass
-                else:
-                    utils.append(element.span.span.span['data-odd'])
-            except:
-                # Store the text
-                utils.append(element.text)
-        if len(utils) == 10:
-            data.append(utils)
+            utils = []
+            cols = row.find_all('td')
+            utils = [button['data-odd'] for button in row.find_all('button')]
+            # Extract fixture name
+            for element in cols:
+                try:
+                    # Store the odds that win and didnt win
+                    if 'data-odd' in element.attrs:
+                        pass
+                    else:
+                        utils.append(element.span.span.span['data-odd'])
+                except:
+                    # Store the text
+                    utils.append(element.text)
+            if len(utils) == 10:
+                data.append(utils)
     df = pd.DataFrame(data,columns=["1","X","2","Date","Match","-","-","-","-","-"])
     return df[['Date','Match','1','X','2']]
+
+
+# Function to handle both cases
+def process_date(date_str):
+    current_year = datetime.now().year
+
+    date_str = date_str.strip()
+    
+    if date_str == '':
+        return None  # Return None for empty strings
+    
+    try:
+        # Check if the date includes a year
+        if len(date_str.split()[-1]) == 4 and date_str.split()[-1].isdigit():
+            # Full date with year provided
+            return pd.to_datetime(date_str, format='%d.%m.%Y %H:%M', errors='coerce')
+        else:
+            # No year, append the current year
+            return pd.to_datetime(f"{date_str} {current_year}", format='%d.%m. %H:%M %Y', errors='coerce')
+    except ValueError:
+        return None  # Handle parsing errors gracefully
+    
 
 def get_teams(match):
     home,away = match.strip(' ').split('-')
     return home,away
 
-def get_gameweek_teams():
+def get_gameweek_teams(round):
     print (1111111)
     URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
     print (22222222)
     soup = BeautifulSoup(response.text, 'html.parser')
-    data = fetch_data_fixtures(soup)
+    data = fetch_data_fixtures(soup,round)
+
+    data['Date'] = data['Date'].apply(process_date)
+    first_game = data['Date'].min() - pd.Timedelta(minutes=90)
+
     data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
     data['home'] = data['home1'] + '_' + data['away1'] +'_H'
     data['away'] = data['away1'] + '_' + data['home1'] +'_A'
@@ -61,7 +92,7 @@ def get_gameweek_teams():
     sorted_odds= dict(sorted(odds.items(), key=lambda item: float(item[1])))
     ordered_list = list(sorted_odds.keys())
     L =  (20-len(ordered_list))/2
-    return {ordered_list[i].strip():20-i-L for i in range(len(ordered_list))}
+    return {ordered_list[i].strip():20-i-L for i in range(len(ordered_list))}, first_game
 
 
 
