@@ -55,8 +55,8 @@ class User(UserMixin, db.Model):
     locked_team_choice = db.Column(db.String(50))
     previous_results = db.Column(db.Text)  # JSON string to store previous results
     league_ids = db.Column(db.Text, default='[]')
-    doubleUp = db.Column(db.Boolean, default=False)
-    doubleUpsLeft = db.Column(db.Integer, default = 2)
+    doubleup = db.Column(db.Boolean, default=False)
+    doubleupsleft = db.Column(db.Integer, default = 2)
 
 
     def set_password(self, password):
