@@ -357,7 +357,9 @@ def generate_teams():
         if current_user.previous_results is None:
             round = None
         else:
-            round = len(current_user.previous_results) +1
+            round = len(json.loads(current_user.previous_results)) +1
+
+        print (round)
         # Example function call to generate new game week teams
         new_teams, start_gameweek = get_gameweek_teams(round)
         update_gameweek_teams(new_teams, start_gameweek)

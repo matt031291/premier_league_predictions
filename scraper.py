@@ -71,6 +71,7 @@ def get_gameweek_teams(round):
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
     print (22222222)
+    print (round)
     soup = BeautifulSoup(response.text, 'html.parser')
     data = fetch_data_fixtures(soup,round)
 
