@@ -7,6 +7,7 @@ import random
 import json
 import os
 from scraper import get_gameweek_teams, get_results
+from datetime import datetime,timedelta
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -118,6 +119,7 @@ def update_gameweek_teams(data, start_gameweek):
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams:
         gameweek_teams.data = json.dumps(data)
+        gameweek_teams.start_time = start_gameweek
     else:
         new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek)
         db.session.add(new_gameweek_teams)
@@ -154,8 +156,15 @@ def lock_team_choices():
                     break
         ## Option to add strategies
         user.team_choice = None
+    
+    # Calculate the new time
+    new_time = datetime.now() + timedelta(days=100)
+    
+    # Update the record's start_time
+    
+
     teams = {}
-    update_gameweek_teams(teams)
+    update_gameweek_teams(teams, new_time)
 
 # Function to update scores and reset team choices
 def update_scores():
@@ -243,9 +252,20 @@ def signup():
 
 @app.route('/keep-alive')
 def keep_alive():
-    # Any code you want to execute when this endpoint is hit
-    print("Keep-alive endpoint was accessed")
+    gameweek_teams = GameWeekTeams.query.first()  # Retrieve the first record
+    if not gameweek_teams:
+        return "I'm alive!", 200
+
+    start_time = gameweek_teams.start_time
+    now = datetime.now()
+
+    if now > start_time:
+        lock_team_choices()  # Call the lock function if the condition is met
+        
+
+
     return "I'm alive!", 200
+
 
 @app.route('/logout')
 @login_required
