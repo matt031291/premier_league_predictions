@@ -300,6 +300,7 @@ def login():
         # Check if the request is from a web browser or the iOS app
         is_ios_app = "iPhone" in request.headers.get('User-Agent', '')
 
+        print (11111, is_ios_app)
         # Attempt to find the user or admin in the database
         user = User.query.filter_by(username=username).first()
         admin = Admin.query.filter_by(username=username).first()
