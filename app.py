@@ -180,8 +180,9 @@ def update_scores():
         score_for_round = 0 
         if user.locked_team_choice in winner_scores:
             score_for_round = winner_scores[user.locked_team_choice]
-        if user.locked_team_choice[0:3] == 'Lei':
-            score_for_round += 0.1
+        if user.locked_team_choice is not None:
+            if user.locked_team_choice[0:3] == 'Lei':
+                score_for_round += 0.1
         user.score += score_for_round
         user.add_previous_result(user.locked_team_choice, score_for_round)
         user.team_choice = None
