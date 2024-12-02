@@ -12,6 +12,7 @@ from datetime import datetime,timedelta
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
+jwt = JWTManager(app)
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
