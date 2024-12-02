@@ -494,7 +494,7 @@ def loginIOS():
         return jsonify({
             'access_token': token,
             'username': user.username,
-            'points': user.points,
+            'score': user.score,
             'gold': user.gold,
             'team_choice': user.team_choice,
             'locked_team_choice': user.locked_team_choice
