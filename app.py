@@ -294,48 +294,26 @@ def admin():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Get the username and password from the form data
         username = request.form['username']
         password = request.form['password']
-        
-        # Check if the request is from a web browser or the iOS app
-        is_ios_app = "iPhone" in request.headers.get('User-Agent', '')
 
-        print (11111, is_ios_app)
-        # Attempt to find the user or admin in the database
         user = User.query.filter_by(username=username).first()
         admin = Admin.query.filter_by(username=username).first()
 
-        # Check the credentials for the user or admin
         if user and user.check_password(password):
-            login_user(user)  # Log the user in
-            if is_ios_app:
-                # For iOS: return a JSON response with the message and redirect location
-                return jsonify({"message": "Logged in successfully", "redirect": "home", "username": username}), 200
-            else:
-                # For Web: render the appropriate template (Home page)
-                return redirect(url_for('home', username=username))  # Redirect to home page with username
-        
-        elif admin and admin.check_password(password):
-            login_user(admin)  # Log the admin in
-            if is_ios_app:
-                # For iOS: return a JSON response with the message and redirect location
-                return jsonify({"message": "Logged in as admin", "redirect": "admin"}), 200
-            else:
-                # For Web: render the admin page
+            login_user(user)
+            flash('Logged in successfully.', 'success')
+            if username == 'admin':
                 return redirect(url_for('admin'))
-        
-        else:
-            # Invalid credentials
-            if is_ios_app:
-                # For iOS: return an error message and indicate to stay on the login page
-                return jsonify({"message": "Incorrect username or password.", "redirect": "login"}), 400
             else:
-                # For Web: Render the login page with an error message
-                flash('Incorrect username or password.', 'error')
-                return render_template('login.html')
+                return redirect(url_for('home', username=username))  # Redirect to home page with username
+        elif admin and admin.check_password(password):
+            login_user(admin)
+            flash('Logged in as admin.', 'success')
+            return redirect(url_for('admin'))
+        else:
+            flash('Incorrect username or password.', 'error')
 
-    # If the method is GET, render the login page
     return render_template('login.html')
 
 
