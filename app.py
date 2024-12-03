@@ -497,21 +497,21 @@ def loginIOS():
     user = User.query.filter_by(username=username).first()
     if user and user.check_password(password):
         token = create_access_token(identity=username)
-        print (jsonify({
-            'access_token': token,
-            'username': user.username,
-            'score': user.score,
-            'gold': user.gold,
-            'team_choice': user.team_choice,
-            'locked_team_choice': user.locked_team_choice
-        }))
+        if user.team_choice is None:
+            team_choice = ""
+        else:
+            team_choice = user.team_choice
+        if user.locked_team_choice is None:
+            locked_team_choice = ""
+        else:
+            locked_team_choice = user.locked_team_choice
         return jsonify({
             'access_token': token,
             'username': user.username,
             'score': user.score,
             'gold': user.gold,
-            'team_choice': user.team_choice,
-            'locked_team_choice': user.locked_team_choice
+            'team_choice': team_choice,
+            'locked_team_choice': locked_team_choice
         }), 200
     return jsonify({"msg": "Invalid username or password"}), 401
 
