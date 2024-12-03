@@ -498,7 +498,9 @@ def loginIOS():
     user = User.query.filter_by(username=username).first()
     admin = User.query.filter_by(username="admin").first()
     teams = read_current_gameweek_teams()
-    print (teams)
+    teams_new_string = {}
+    for key,value in teams.items():
+        teams_new_string[transform_match_string(key)] = value
     if admin.previous_results is None:
         round = 1
     else:
@@ -521,7 +523,7 @@ def loginIOS():
             'team_choice': team_choice,
             'locked_team_choice': locked_team_choice,
             'round': round,
-            'teams': teams
+            'teams': teams_new_string 
         }), 200
     return jsonify({"msg": "Invalid username or password"}), 401
 
