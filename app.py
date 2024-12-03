@@ -204,10 +204,16 @@ def index():
 @login_required
 def home(username):
     user = User.query.filter_by(username=username).first()
+    admin = User.query.filter_by(username=username).first()
+    if admin.previous_results is None:
+        round = 1
+    else:
+        previous_results_dict = json.loads(admin.previous_results)
+        round = len(previous_results_dict) +1
     teams = read_current_gameweek_teams()
     if teams is None:
         teams = {}
-    return render_template('home.html', username=username, score=user.score, gold=user.gold, team_choice=user.team_choice,locked_team_choice= user.locked_team_choice, teams=teams)
+    return render_template('home.html', username=username, score=user.score, gold=user.gold, team_choice=user.team_choice,locked_team_choice= user.locked_team_choice, teams=teams, round = round)
 
 @app.route('/choose_team', methods=['POST'])
 @login_required
