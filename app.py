@@ -5,6 +5,7 @@ from flask_jwt_extended import JWTManager, create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 import numpy as np
 import random 
+import re
 import json
 import os
 from scraper import get_gameweek_teams, get_results
@@ -495,29 +496,47 @@ def loginIOS():
     username = data.get('username')
     password = data.get('password')
     user = User.query.filter_by(username=username).first()
+    admin = User.query.filter_by(username="admin").first()
+    if admin.previous_results is None:
+        round = 1
+    else:
+        round = len(admin.previous_results)+1
     if user and user.check_password(password):
         token = create_access_token(identity=username)
         if user.team_choice is None:
             team_choice = ""
         else:
-            team_choice = user.team_choice
+            team_choice = transform_match_string(user.team_choice)
         if user.locked_team_choice is None:
             locked_team_choice = ""
         else:
-            locked_team_choice = user.locked_team_choice
+            locked_team_choice = transform_match_string(user.locked_team_choice)
         return jsonify({
             'access_token': token,
             'username': user.username,
             'score': user.score,
             'gold': user.gold,
             'team_choice': team_choice,
-            'locked_team_choice': locked_team_choice
+            'locked_team_choice': locked_team_choice,
+            'round': round
         }), 200
     return jsonify({"msg": "Invalid username or password"}), 401
 
 
 
 
+def transform_match_string(input_string):
+    # Step 1: Replace the first underscore with " Vs "
+    transformed_string = input_string.replace('_', ' Vs ', 1)
+
+    # Step 2: Add spaces before any uppercase letters in the middle of a team name
+    transformed_string = re.sub(r'(?<=.)(?=[A-Z])', r' \g<0>', transformed_string)
+
+    # Step 3: Replace _H with home emoji and _A with away emoji
+    transformed_string = transformed_string.replace('_H', ' 🏠')  # Home emoji
+    transformed_string = transformed_string.replace('_A', ' 🌍')  # Away emoji (Globe + Airplane)
+
+    return transformed_string
 
 
 
