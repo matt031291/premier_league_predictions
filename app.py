@@ -530,6 +530,63 @@ def loginIOS():
 
 
 
+@app.route('/choose_teamIOS', methods=['POST'])
+def choose_teamIOS():
+    data = request.json
+    transformed_team_name = data.get('team_name')
+    username = data.get('username')
+    if transformed_team_name == None or transformed_team_name == '':
+        return jsonify({"msg": "team not selected"}), 401
+
+    team_name = inverse_transform_match_string(transformed_team_name)
+    user = User.query.filter_by(username=username).first()
+
+
+        # Get game week teams
+    teams = read_current_gameweek_teams()
+
+        # Check if selected team exists and user has enough gold
+    if team_name in teams and user.gold >= teams[team_name]:
+        # Return gold from previous pick if changing team choice
+
+        # Update user's team choice and deduct gold for new choice
+        user.team_choice = team_name
+        db.session.commit()
+    else:
+        return jsonify({"msg": "Not enough gold"}), 401
+
+
+
+    teams_new_string = {}
+    for key,value in teams.items():
+        teams_new_string[transform_match_string(key)] = value
+    if admin.previous_results is None:
+        round = 1
+    else:
+        round = len(json.loads(admin.previous_results))+1
+    if user.team_choice is None:
+        team_choice = ""
+    else:
+        team_choice = transform_match_string(user.team_choice)
+    if user.locked_team_choice is None:
+        locked_team_choice = ""
+    else:
+        locked_team_choice = transform_match_string(user.locked_team_choice)
+    return jsonify({
+        'access_token': "",
+        'username': user.username,
+        'score': user.score,
+        'gold': user.gold,
+        'team_choice': team_choice,
+        'locked_team_choice': locked_team_choice,
+        'round': round,
+        'teams': teams_new_string 
+    }), 200
+
+
+
+
+
 def transform_match_string(input_string):
     # Step 1: Replace the first underscore with " Vs "
     transformed_string = input_string.replace('_', ' vs ', 1)
