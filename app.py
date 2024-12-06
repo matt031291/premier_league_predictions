@@ -532,15 +532,27 @@ def loginIOS():
 
 def transform_match_string(input_string):
     # Step 1: Replace the first underscore with " Vs "
-    transformed_string = input_string.replace('_', ' Vs ', 1)
+    transformed_string = input_string.replace('_', ' vs ', 1)
+    print(transformed_string)
     # Step 3: Replace _H with home emoji and _A with away emoji
     transformed_string = transformed_string.replace('_H', ' 🏠')  # Home emoji
     transformed_string = transformed_string.replace('_A', ' 🌍')  # Away emoji (Globe + Airplane)
-    # Step 2: Add spaces before any uppercase letters in the middle of a team name
-    transformed_string = re.sub(r'(?<=.)(?=[A-Z])', r' \g<0>', transformed_string)
 
+    print(transformed_string)
 
     return transformed_string
+
+
+def inverse_transform_match_string(transformed_string):
+    # Step 1: Replace " Vs " with the first underscore
+    inverse_string = transformed_string.replace(' vs ', '_', 1)
+    
+    
+    # Step 3: Replace home and away emojis with _H and _A respectively
+    inverse_string = inverse_string.replace(' 🏠', '_H')  # Home emoji back to _H
+    inverse_string = inverse_string.replace(' 🌍', '_A')  # Away emoji back to _A
+
+    return inverse_string
 
 
 
