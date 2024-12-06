@@ -535,6 +535,8 @@ def choose_teamIOS():
     data = request.json
     transformed_team_name = data.get('team_name')
     username = data.get('username')
+    admin = User.query.filter_by(username="admin").first()
+
     if transformed_team_name == None or transformed_team_name == '':
         return jsonify({"msg": "team not selected"}), 401
 
