@@ -57,6 +57,7 @@ class User(UserMixin, db.Model):
     team_choice = db.Column(db.String(50))  # Nullable by default, starts as None
     locked_team_choice = db.Column(db.String(50))
     previous_results = db.Column(db.Text)  # JSON string to store previous results
+    delayed_matches = db.Column(db.Text) # JSON string for cancelled matches
     league_ids = db.Column(db.Text, default='[]')
     doubleup = db.Column(db.Boolean, default=False)
     doubleupsleft = db.Column(db.Integer, default = 2)
@@ -80,6 +81,33 @@ class User(UserMixin, db.Model):
 
         # Update and save to database
         self.previous_results = json.dumps(previous_results_dict)
+        db.session.commit()
+
+    def add_delayed_matches(self, team):
+        if self.delayed_matches:
+            delayed_matches_list = json.loads(self.delayed_matches)
+        else:
+            delayed_matches_list = []
+
+        # Add new result
+        delayed_matches_list+=[team]
+
+        # Update and save to database
+        self.delayed_matches = json.dumps(delayed_matches_list)
+        db.session.commit()
+
+    def remove_delayed_matches(self, team):
+        if self.delayed_matches:
+            delayed_matches_list = json.loads(self.delayed_matches)
+        else:
+            delayed_matches_list = []
+
+        # Add new result
+        if team in delayed_matches_list
+        delayed_matches_list = delayed_matches_list.remove(team)
+
+        # Update and save to database
+        self.delayed_matches= json.dumps(delayed_matches_list)
         db.session.commit()
 
     def add_league_id(self, league_id):
@@ -180,14 +208,31 @@ def update_scores():
     winner_scores = get_results()
     users = User.query.all()
     for user in users:
-        score_for_round = 0 
+        ###ADD Previous delayed_matches
+        for match in user.delayed_matches:
+            score_for_round = None 
+
+            if match in winner_scores:
+                score_for_round = winner_scores[user.locked_team_choice]
+            if match[0:3] == 'Lei':  
+                score_for_round += 0.1 
+            if score_for_round is not None:
+                user.score += score_for_round
+                user.add_previous_result(match, score_for_round)
+                user.remove_delayed_matches(match)
+
+        ###Add current round
+        score_for_round = None 
         if user.locked_team_choice in winner_scores:
             score_for_round = winner_scores[user.locked_team_choice]
         if user.locked_team_choice is not None:
             if user.locked_team_choice[0:3] == 'Lei':
                 score_for_round += 0.1
-        user.score += score_for_round
-        user.add_previous_result(user.locked_team_choice, score_for_round)
+        if score_for_round is not None:
+            user.score += score_for_round
+            user.add_previous_result(user.locked_team_choice, score_for_round)
+        else:
+            user.add_delayed_matches(user.locked_team_choice)
         user.team_choice = None
         user.locked_team_choice = None
         db.session.commit()
@@ -592,12 +637,10 @@ def choose_teamIOS():
 def transform_match_string(input_string):
     # Step 1: Replace the first underscore with " Vs "
     transformed_string = input_string.replace('_', ' vs ', 1)
-    print(transformed_string)
     # Step 3: Replace _H with home emoji and _A with away emoji
     transformed_string = transformed_string.replace('_H', ' 🏠')  # Home emoji
     transformed_string = transformed_string.replace('_A', ' 🌍')  # Away emoji (Globe + Airplane)
 
-    print(transformed_string)
 
     return transformed_string
 
