@@ -103,8 +103,8 @@ class User(UserMixin, db.Model):
             delayed_matches_list = []
 
         # Add new result
-        if team in delayed_matches_list
-        delayed_matches_list = delayed_matches_list.remove(team)
+        if team in delayed_matches_list:
+            delayed_matches_list = delayed_matches_list.remove(team)
 
         # Update and save to database
         self.delayed_matches= json.dumps(delayed_matches_list)
@@ -218,6 +218,7 @@ def update_scores():
                 score_for_round += 0.1 
             if score_for_round is not None:
                 user.score += score_for_round
+                user.score = format(user.score, '.1f')
                 user.add_previous_result(match, score_for_round)
                 user.remove_delayed_matches(match)
 
