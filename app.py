@@ -256,8 +256,10 @@ def home(username):
     if admin.previous_results is None:
         round = 1
     else:
-        previous_results_dict = json.loads(admin.previous_results)
-        round = len(json.loads(user.previous_results)) +len(json.loads(user.delayed_matches)) +1
+        if user.delayed_matches is not None:
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+        else:
+            round = len(json.loads(admin.previous_results)) +1 
 
     teams = read_current_gameweek_teams()
     teams_new_string = {}
@@ -555,8 +557,13 @@ def loginIOS():
     if admin.previous_results is None:
         round = 1
     else:
-        round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+        if user.delayed_matches is not None:
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+        else:
+            round = len(json.loads(admin.previous_results)) +1 
 
+
+            
     if user and user.check_password(password):
         token = create_access_token(identity=username)
         if user.team_choice is None:
@@ -617,7 +624,11 @@ def choose_teamIOS():
     if admin.previous_results is None:
         round = 1
     else:
-        round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+        if user.delayed_matches is not None:
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+        else:
+            round = len(json.loads(admin.previous_results)) +1 
+    
     if user.team_choice is None:
         team_choice = ""
     else:
