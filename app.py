@@ -209,18 +209,19 @@ def update_scores():
     users = User.query.all()
     for user in users:
         ###ADD Previous delayed_matches
-        for match in user.delayed_matches:
-            score_for_round = None 
+        if user.delayed_matches is not None:
+            for match in user.delayed_matches:
+                score_for_round = None 
 
-            if match in winner_scores:
-                score_for_round = winner_scores[user.locked_team_choice]
-            if match[0:3] == 'Lei':  
-                score_for_round += 0.1 
-            if score_for_round is not None:
-                user.score += score_for_round
-                user.score = format(user.score, '.1f')
-                user.add_previous_result(match, score_for_round)
-                user.remove_delayed_matches(match)
+                if match in winner_scores:
+                    score_for_round = winner_scores[user.locked_team_choice]
+                if match[0:3] == 'Lei':  
+                    score_for_round += 0.1 
+                if score_for_round is not None:
+                    user.score += score_for_round
+                    user.score = format(user.score, '.1f')
+                    user.add_previous_result(match, score_for_round)
+                    user.remove_delayed_matches(match)
 
         ###Add current round
         score_for_round = None 
@@ -256,31 +257,35 @@ def home(username):
         round = 1
     else:
         previous_results_dict = json.loads(admin.previous_results)
-        round = len(previous_results_dict) +1
+        round = len(json.loads(user.previous_results)) +len(json.loads(user.delayed_matches)) +1
+
     teams = read_current_gameweek_teams()
+    teams_new_string = {}
+    for key,value in teams.items():
+        teams_new_string[transform_match_string(key)] = value
     if teams is None:
         teams = {}
-    return render_template('home.html', username=username, score=user.score, gold=user.gold, team_choice=user.team_choice,locked_team_choice= user.locked_team_choice, teams=teams, round = round)
+    return render_template('home.html', username=username, score=user.score, gold=user.gold, team_choice=transform_match_string(user.team_choice),locked_team_choice= transform_match_string(user.locked_team_choice), teams=teams_new_string, round = round)
 
 @app.route('/choose_team', methods=['POST'])
 @login_required
 def choose_team():
-    team = request.form.get('team')
-
-    if team:
+    transformed_team_name = request.form.get('team')
+    team_name = inverse_transform_match_string(transformed_team_name)
+    if team_name:
         user = current_user
 
         # Get game week teams
         teams = read_current_gameweek_teams()
 
         # Check if selected team exists and user has enough gold
-        if team in teams and user.gold >= teams[team]:
+        if team_name in teams and user.gold >= teams[team_name]:
             # Return gold from previous pick if changing team choice
 
             # Update user's team choice and deduct gold for new choice
-            user.team_choice = team
+            user.team_choice = team_name
             db.session.commit()
-            flash(f'Team {team} chosen successfully. Gold deducted: {teams[team]}', 'success')
+            flash(f'Team {team_name} chosen successfully. Gold deducted: {teams[team_name]}', 'success')
         else:
             flash('Invalid team selection or not enough gold.', 'error')
 
@@ -439,7 +444,7 @@ def generate_teams():
         if current_user.previous_results is None:
             round = None
         else:
-            round = len(json.loads(current_user.previous_results)) +1
+            round = len(json.loads(current_user.previous_results)) +len(json.loads(current_user.delayed_matches)) +1
 
         print (round)
         # Example function call to generate new game week teams
@@ -550,7 +555,8 @@ def loginIOS():
     if admin.previous_results is None:
         round = 1
     else:
-        round = len(json.loads(admin.previous_results))+1
+        round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+
     if user and user.check_password(password):
         token = create_access_token(identity=username)
         if user.team_choice is None:
@@ -611,7 +617,7 @@ def choose_teamIOS():
     if admin.previous_results is None:
         round = 1
     else:
-        round = len(json.loads(admin.previous_results))+1
+        round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
     if user.team_choice is None:
         team_choice = ""
     else:
@@ -636,6 +642,8 @@ def choose_teamIOS():
 
 
 def transform_match_string(input_string):
+    if input_string is None:
+        return None
     # Step 1: Replace the first underscore with " Vs "
     transformed_string = input_string.replace('_', ' vs ', 1)
     # Step 3: Replace _H with home emoji and _A with away emoji
@@ -647,6 +655,8 @@ def transform_match_string(input_string):
 
 
 def inverse_transform_match_string(transformed_string):
+    if transformed_string is None:
+        return None
     # Step 1: Replace " Vs " with the first underscore
     inverse_string = transformed_string.replace(' vs ', '_', 1)
     
