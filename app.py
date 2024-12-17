@@ -260,11 +260,11 @@ def index():
 @login_required
 def home(username):
     user = User.query.filter_by(username=username).first()
-    admin = User.query.filter_by(username='admin').first()
+    admin = User.query.filter_by(username=username).first()
     if admin.previous_results is None:
         round = 1
     else:
-        if admin.delayed_matches is not None:
+        if user.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
         else:
             round = len(json.loads(admin.previous_results)) +1 
@@ -305,29 +305,13 @@ def choose_team():
 def update_doubleup():
     # Retrieve data from the request
     doubleup_state = request.json.get('doubleup')
-    admin = User.query.filter_by(username='admin').first()
-
+    
     # Assuming current_user is logged in
     current_user.doubleup = doubleup_state
-    if admin.previous_results is None:
-        round = 1
-    else:
-        if admin.delayed_matches is not None:
-            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
-        else:
-            round = len(json.loads(admin.previous_results)) +1 
-
-    teams = read_current_gameweek_teams()
-    teams_new_string = {}
-    for key,value in teams.items():
-        teams_new_string[transform_match_string(key)] = value
-    if teams is None:
-        teams = {}
+    
     # Save to the database
     db.session.commit()
-    #return jsonify({"success": True, "doubleup": current_user.doubleup})
-    return render_template('home.html', username=current_user.username, score=current_user.score, gold=current_user.gold, team_choice=transform_match_string(current_user.team_choice),locked_team_choice= transform_match_string(current_user.locked_team_choice), teams=teams_new_string, round = round, doubleup = current_user.doubleup, doubleupsleft = current_user.doubleupsleft)
-
+    return jsonify({"success": True, "doubleup": current_user.doubleup})
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
