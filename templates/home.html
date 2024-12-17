@@ -61,42 +61,100 @@
             margin-top: 20px;
             text-align: center;
         }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .toggle-label {
+            margin-right: 10px;
+        }
+        .toggle-button {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-button input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Welcome, {{ username }}</h1>
-            <p style = "font-size: 0.95em;"> The table below shows your current score, treasure (<i>Gold</i>), and team you are supporting in the next match (<i>Your Team Choice</i>). Remember to lock your chosen team to play. </p>
-    </br>
-    <table>
-        <tr>
-            <td> <span style="font-weight:bold">Game Week:</span></td>
-            <td> {{ round }} </td>
-          </tr>
-        <tr>
-          <td> <span style="font-weight:bold">Your Score:</span></td>
-          <td> {{ score }} </td>
-        </tr>
-        <tr>
-          <td> <span style="font-weight:bold">Your Gold:</span></td>
-          <td> {{ gold }} </td>
-        </tr>
-        <tr>
-            <td> <span style="font-weight:bold">Your Team Choice:</span></td>
-            <td> {% if team_choice %}{{ team_choice }}{% else %}None{% endif %} </td>
-          </tr>
-          <tr>
-            <td> <span style="font-weight:bold">Your Locked Team Choice:</span></td>
-            <td> {{ locked_team_choice }} </td>
-          </tr>
-          <tr>
-            <td> <span style="font-weight:bold">Double Jeopardy Selected:</span></td>
-            <td>  {% if doubleup %}Yes, {% else %}No, {% endif %} {{doubleupsleft}} remaining </td>
-          </tr>
-      </table>
-      </br>
-      <p style = "font-size: 0.95em;"> Choose your supported team for the next match. You'll be supporting the first team of the pair that is playing. </p>
-      <p style = "font-size: 0.95em;"> You can choose a league in which to play at the bottom of the app. </p>
+        <p style="font-size: 0.95em;"> The table below shows your current score, treasure (<i>Gold</i>), and team you are supporting in the next match (<i>Your Team Choice</i>). Remember to lock your chosen team to play. </p>
+        </br>
+        <table>
+            <tr>
+                <td> <span style="font-weight:bold">Game Week:</span></td>
+                <td> {{ round }} </td>
+            </tr>
+            <tr>
+                <td> <span style="font-weight:bold">Your Score:</span></td>
+                <td> {{ score }} </td>
+            </tr>
+            <tr>
+                <td> <span style="font-weight:bold">Your Gold:</span></td>
+                <td> {{ gold }} </td>
+            </tr>
+            <tr>
+                <td> <span style="font-weight:bold">Your Team Choice:</span></td>
+                <td> {% if team_choice %}{{ team_choice }}{% else %}None{% endif %} </td>
+            </tr>
+            <tr>
+                <td> <span style="font-weight:bold">Your Locked Team Choice:</span></td>
+                <td> {{ locked_team_choice }} </td>
+            </tr>
+            <tr>
+                <td> <span style="font-weight:bold">Double Jeopardy Selected:</span></td>
+                <td>  {% if doubleup %}Yes{% else %}No{% endif %}, {{ doubleupsleft }} remaining </td>
+            </tr>
+        </table>
+        </br>
+
+        <!-- Double Jeopardy Toggle Section -->
+        <div class="toggle-container">
+            <span class="toggle-label">Double Jeopardy:</span>
+            <label class="toggle-button">
+                <input type="checkbox" id="doubleJeopardyToggle" {% if doubleup %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <p id="status">Double Jeopardy is {% if doubleup %}ON{% else %}OFF{% endif %}</p>
+
+        <p style="font-size: 0.95em;"> Choose your supported team for the next match. You'll be supporting the first team of the pair that is playing. </p>
+        <p style="font-size: 0.95em;"> You can choose a league in which to play at the bottom of the app. </p>
         <h2>Next Matches:</h2>
         <form action="{{ url_for('choose_team') }}" method="POST" class="teams-form">
             <ul class="teams-list">
@@ -108,7 +166,6 @@
                     </li>
                 {% endfor %}
             </ul>
-
             <input type="submit" value="Select Team" class="submit-btn">
         </form>
 
@@ -125,8 +182,8 @@
         </form>
 
         <h2>Join a League</h2>
-        <p style = "font-size: 0.9em;"> &#9432; What is this? </p>
-        <p style = "font-size: 0.875em;"> <i>Leagues</i> allow you to see the summarised scores for a set of players (those within the same <i>league</i>) </p>
+        <p style="font-size: 0.9em;"> &#9432; What is this? </p>
+        <p style="font-size: 0.875em;"> <i>Leagues</i> allow you to see the summarised scores for a set of players (those within the same <i>league</i>) </p>
         <form action="{{ url_for('join_league') }}" method="POST" class="teams-form">
             <label for="league_name">League Name:</label><br>
             <input type="text" id="league_name" name="league_name" required><br><br>
@@ -137,5 +194,18 @@
 
         <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
     </div>
+
+    <script>
+        const toggle = document.getElementById('doubleJeopardyToggle');
+        const statusText = document.getElementById('status');
+
+        // Listen for toggle state changes
+        toggle.addEventListener('change', () => {
+            const isDoubleJeopardy = toggle.checked; // True or False
+            statusText.textContent = `Double Jeopardy is ${isDoubleJeopardy ? 'ON' : 'OFF'}`;
+            console.log('Double Jeopardy status:', isDoubleJeopardy);
+            // You may need to send this update to the server via an API or form submission.
+        });
+    </script>
 </body>
 </html>
