@@ -311,6 +311,7 @@ def update_doubleup():
     
     # Save to the database
     db.session.commit()
+    return jsonify({"success": True, "doubleup": current_user.doubleup})
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():

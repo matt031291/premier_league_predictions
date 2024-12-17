@@ -113,7 +113,7 @@
 <body>
     <div class="container">
         <h1>Welcome, {{ username }}</h1>
-        <p style="font-size: 0.95em;"> The table below shows your current score, treasure (<i>Gold</i>), and team you are supporting in the next match (<i>Your Team Choice</i>). Remember to lock your chosen team to play. </p>
+        <p style="font-size: 0.95em;"> The table below shows your current score, treasure (<i>Gold</i>), and team you are supporting in the next match (<i>Your Team Choice</i>). </p>
         </br>
         <table>
             <tr>
@@ -138,7 +138,7 @@
             </tr>
             <tr>
                 <td> <span style="font-weight:bold">Double Jeopardy Selected:</span></td>
-                <td>  {% if doubleup %}Yes{% else %}No{% endif %}, {{ doubleupsleft }} remaining </td>
+                <td>  {% if doubleup %}Yes, {{ doubleupsleft -1 }} remaining {% else %}No{% endif %}, {{ doubleupsleft }} remaining </td>
             </tr>
         </table>
         </br>
@@ -153,8 +153,6 @@
         </div>
         <p id="status">Double Jeopardy is {% if doubleup %}ON{% else %}OFF{% endif %}</p>
 
-        <p style="font-size: 0.95em;"> Choose your supported team for the next match. You'll be supporting the first team of the pair that is playing. </p>
-        <p style="font-size: 0.95em;"> You can choose a league in which to play at the bottom of the app. </p>
         <h2>Next Matches:</h2>
         <form action="{{ url_for('choose_team') }}" method="POST" class="teams-form">
             <ul class="teams-list">
