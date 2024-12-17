@@ -199,12 +199,31 @@
         const toggle = document.getElementById('doubleJeopardyToggle');
         const statusText = document.getElementById('status');
 
-        // Listen for toggle state changes
-        toggle.addEventListener('change', () => {
-            const isDoubleJeopardy = toggle.checked; // True or False
+        toggle.addEventListener('change', async () => {
+            const isDoubleJeopardy = toggle.checked;
+
+            // Update the status text
             statusText.textContent = `Double Jeopardy is ${isDoubleJeopardy ? 'ON' : 'OFF'}`;
-            console.log('Double Jeopardy status:', isDoubleJeopardy);
-            // You may need to send this update to the server via an API or form submission.
+
+            try {
+                // Send the state to the server
+                const response = await fetch('/update_doubleup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ doubleup: isDoubleJeopardy }),
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    console.log('Double Jeopardy updated successfully:', data.doubleup);
+                } else {
+                    console.error('Failed to update Double Jeopardy state');
+                }
+            } catch (error) {
+                console.error('Error updating Double Jeopardy:', error);
+            }
         });
     </script>
 </body>

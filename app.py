@@ -301,7 +301,16 @@ def choose_team():
 
     return redirect(url_for('home', username=current_user.username))
 
-
+@app.route('/update_doubleup', methods=['POST'])
+def update_doubleup():
+    # Retrieve data from the request
+    doubleup_state = request.json.get('doubleup')
+    
+    # Assuming current_user is logged in
+    current_user.doubleup = doubleup_state
+    
+    # Save to the database
+    db.session.commit()
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
