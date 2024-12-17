@@ -234,7 +234,8 @@ def update_scores():
             score_for_round = winner_scores[user.locked_team_choice]
             if user.doubleup and user.doubleupsleft > 0.5:
                 score_for_round += winner_scores[user.locked_team_choice]
-                user.doubleupsleft -= 1            
+                user.doubleupsleft -= 1          
+                user.doubleup = False  
         if user.locked_team_choice is not None:
             if user.locked_team_choice[0:3] == 'Lei':
                 score_for_round += 0.1
