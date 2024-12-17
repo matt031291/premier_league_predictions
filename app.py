@@ -183,6 +183,11 @@ def lock_team_choices():
                 if key == user.team_choice:
                     user.gold -= value
                     user.locked_team_choice = key
+                    if user.doubleup:
+                        if user.gold >= value:
+                            user.gold -= value
+                        else:
+                            user.doubleup = False
                     break
         else:
             random_value = np.random.randint(1,9)
@@ -227,6 +232,9 @@ def update_scores():
         score_for_round = None 
         if user.locked_team_choice in winner_scores:
             score_for_round = winner_scores[user.locked_team_choice]
+            if user.doubleup and user.doubleupsleft > 0.5:
+                score_for_round += winner_scores[user.locked_team_choice]
+                user.doubleupsleft -= 1            
         if user.locked_team_choice is not None:
             if user.locked_team_choice[0:3] == 'Lei':
                 score_for_round += 0.1
@@ -267,7 +275,7 @@ def home(username):
         teams_new_string[transform_match_string(key)] = value
     if teams is None:
         teams = {}
-    return render_template('home.html', username=username, score=user.score, gold=user.gold, team_choice=transform_match_string(user.team_choice),locked_team_choice= transform_match_string(user.locked_team_choice), teams=teams_new_string, round = round)
+    return render_template('home.html', username=username, score=user.score, gold=user.gold, team_choice=transform_match_string(user.team_choice),locked_team_choice= transform_match_string(user.locked_team_choice), teams=teams_new_string, round = round, doubleup = user.doubleup, doubleupsleft = user.doubleupsleft)
 
 @app.route('/choose_team', methods=['POST'])
 @login_required
