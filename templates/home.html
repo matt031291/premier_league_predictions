@@ -138,7 +138,7 @@
             </tr>
             <tr>
                 <td> <span style="font-weight:bold">Double Jeopardy Selected:</span></td>
-                <td>  {% if doubleup %}Yes, {{ doubleupsleft -1 }} remaining {% else %}No{% endif %}, {{ doubleupsleft }} remaining </td>
+                <td>  {% if doubleup %}Yes, {{ doubleupsleft -1 }} remaining {% else %}No, {{ doubleupsleft }} remaining{% endif %} </td>
             </tr>
         </table>
         </br>
@@ -151,7 +151,7 @@
                 <span class="slider"></span>
             </label>
         </div>
-        <p id="status">Double Jeopardy is {% if doubleup %}ON{% else %}OFF{% endif %}</p>
+        <p id="status">Refresh page to update DoubleUp Slider</p>
 
         <h2>Next Matches:</h2>
         <form action="{{ url_for('choose_team') }}" method="POST" class="teams-form">
