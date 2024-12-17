@@ -260,7 +260,7 @@ def index():
 @login_required
 def home(username):
     user = User.query.filter_by(username=username).first()
-    admin = User.query.filter_by(username=username).first()
+    admin = User.query.filter_by(username='admin').first()
     if admin.previous_results is None:
         round = 1
     else:
@@ -305,7 +305,8 @@ def choose_team():
 def update_doubleup():
     # Retrieve data from the request
     doubleup_state = request.json.get('doubleup')
-    
+    admin = User.query.filter_by(username='admin').first()
+
     # Assuming current_user is logged in
     current_user.doubleup = doubleup_state
     if admin.previous_results is None:
