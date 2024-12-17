@@ -91,11 +91,7 @@
           </tr>
           <tr>
             <td> <span style="font-weight:bold">Double Jeopardy Selected:</span></td>
-            <td> {{ doubleup }} </td>
-          </tr>
-          <tr>
-            <td> <span style="font-weight:bold">Double Jeopardies remaning:</span></td>
-            <td> {{ doubleupsleft }} </td>
+            <td>  {% if doubleup %}Yes, {% else %}No, {% endif %} {{doubleupsleft}} remaining </td>
           </tr>
       </table>
       </br>
