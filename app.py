@@ -691,7 +691,6 @@ def get_leaguesIOS():
         # Add the global "Worldwide" league
         all_leagues = ["Worldwide"] + user_leagues_str
 
-        print (all_leagues)
         # Return the list of league
         return jsonify({"leagues": all_leagues}), 200
 
@@ -704,11 +703,16 @@ def get_leaguesIOS():
 def get_league_details():
     data = request.json
     league_name = data.get("league_name")
+    #if "league_name" == "Worldwide":
+
     page = int(data.get("page", 1))
     per_page = 20  # Number of rows per page
 
+    print (league_name)
+    print (type(league_name))
     # Fetch league from the database
     league = League.query.filter_by(name=league_name).first()
+    print (league,11111)
     if not league:
         return jsonify({"error": "League not found"}), 404
 
