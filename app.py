@@ -716,7 +716,7 @@ def get_league_details():
         league = League.query.filter_by(name=league_name).first()
         print (league,11111)
         if not league:
-            return jsonify({"error": "League not found"}), 404
+            return jsonify({"error": "League not found"}), 402
 
         # Fetch users in the league
         user_ids = json.loads(league.user_ids) if league.user_ids else []
