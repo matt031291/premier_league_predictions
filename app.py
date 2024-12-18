@@ -4,7 +4,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_jwt_extended import JWTManager, create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 import numpy as np
-import random 
+import math
 import re
 import json
 import os
@@ -698,6 +698,46 @@ def get_leaguesIOS():
     except Exception as e:
         # Handle unexpected errors
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/get_league_detailsIOS', methods=['POST'])
+def get_league_details():
+    data = request.json
+    league_name = data.get("league_name")
+    page = int(data.get("page", 1))
+    per_page = 20  # Number of rows per page
+
+    # Fetch league from the database
+    league = League.query.filter_by(name=league_name).first()
+    if not league:
+        return jsonify({"error": "League not found"}), 404
+
+    # Fetch users in the league
+    user_ids = json.loads(league.user_ids) if league.user_ids else []
+    users = User.query.filter(User.id.in_(user_ids)).all()
+
+    # Prepare the paginated member list
+    total_members = len(users)
+    total_pages = math.ceil(total_members / per_page)
+    start_index = (page - 1) * per_page
+    end_index = start_index + per_page
+
+    members = []
+    for user in users[start_index:end_index]:
+        members.append({
+            "username": user.username,
+            "points": user.points,
+            "gold": user.gold,
+            "goal_difference": 0,
+            "locked_team": user.locked_team_choice
+        })
+
+    return jsonify({
+        "members": members,
+        "total_pages": total_pages
+    })
+
+
 
 def transform_match_string(input_string):
     if input_string is None:
