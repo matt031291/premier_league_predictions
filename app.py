@@ -685,7 +685,7 @@ def get_leaguesIOS():
 
         user_leagues = json.loads(user.league_ids)
 
-        user_leagues_str = [str(i) for i in user_leagues]
+        user_leagues_str = [str(League.query.get(id).name)  for id in user_leagues]
 
         print (user_leagues)
         # Add the global "Worldwide" league
