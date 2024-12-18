@@ -726,12 +726,12 @@ def get_league_details():
     for user in users[start_index:end_index]:
         members.append({
             "username": user.username,
-            "points": user.points,
+            "points": user.score,
             "gold": user.gold,
             "goal_difference": 0,
             "locked_team": user.locked_team_choice
         })
-
+    print (members)
     return jsonify({
         "members": members,
         "total_pages": total_pages
