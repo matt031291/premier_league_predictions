@@ -685,10 +685,14 @@ def get_leaguesIOS():
 
         user_leagues = json.loads(user.league_ids)
 
-        # Add the global "Worldwide" league
-        all_leagues = ["Worldwide"] + ['ABC'] + user_leagues
+        user_leagues_str = [str(i) for i in user_leagues]
 
-        # Return the list of leagues
+        print (user_leagues)
+        # Add the global "Worldwide" league
+        all_leagues = ["Worldwide"] + user_leagues_str
+
+        print (all_leagues)
+        # Return the list of league
         return jsonify({"leagues": all_leagues}), 200
 
     except Exception as e:
