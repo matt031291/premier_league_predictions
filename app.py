@@ -669,7 +669,31 @@ def choose_teamIOS():
 
 
 
+@app.route('/getLeaguesIOS', methods=['POST'])
+def get_leaguesIOS():
+    try:
+        # Parse input JSON
+        data = request.get_json()
+        username = data.get("username")
 
+        # Validate input
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+
+        # Retrieve leagues for the user (mock data for demonstration)
+        user = User.query.filter_by(username=username).first()
+
+        user_leagues = json.loads(user.league_ids)
+
+        # Add the global "Worldwide" league
+        all_leagues = ["Worldwide"] + user_leagues
+
+        # Return the list of leagues
+        return jsonify({"leagues": all_leagues}), 200
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": str(e)}), 500
 
 def transform_match_string(input_string):
     if input_string is None:
