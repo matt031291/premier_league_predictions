@@ -686,7 +686,7 @@ def get_leaguesIOS():
         user_leagues = json.loads(user.league_ids)
 
         # Add the global "Worldwide" league
-        all_leagues = ["Worldwide"] + user_leagues
+        all_leagues = ["Worldwide"] + ['ABC'] + user_leagues
 
         # Return the list of leagues
         return jsonify({"leagues": all_leagues}), 200
