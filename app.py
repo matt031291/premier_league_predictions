@@ -703,22 +703,24 @@ def get_leaguesIOS():
 def get_league_details():
     data = request.json
     league_name = data.get("league_name")
-    #if "league_name" == "Worldwide":
+
 
     page = int(data.get("page", 1))
     per_page = 20  # Number of rows per page
+    if "league_name" == "Worldwide":
+        users = User.query.all()  # Fetch all users
+    else:
+        print (league_name)
+        print (type(league_name))
+        # Fetch league from the database
+        league = League.query.filter_by(name=league_name).first()
+        print (league,11111)
+        if not league:
+            return jsonify({"error": "League not found"}), 404
 
-    print (league_name)
-    print (type(league_name))
-    # Fetch league from the database
-    league = League.query.filter_by(name=league_name).first()
-    print (league,11111)
-    if not league:
-        return jsonify({"error": "League not found"}), 404
-
-    # Fetch users in the league
-    user_ids = json.loads(league.user_ids) if league.user_ids else []
-    users = User.query.filter(User.id.in_(user_ids)).all()
+        # Fetch users in the league
+        user_ids = json.loads(league.user_ids) if league.user_ids else []
+        users = User.query.filter(User.id.in_(user_ids)).all()
 
     # Prepare the paginated member list
     total_members = len(users)
