@@ -360,16 +360,13 @@ def keep_alive():
         users = User.query.all()
         for user in users:
             if user.email is not None:
-                body = """
-                        <html>
-                            <body>
-                                <p>Hello,</p>
-                                <p>Teams will be locked in approximately 24 hours, please choose your team"</p>
-                                <a href="https://premier-league-predictions-2.onrender.com/">Premier League Predictions</a>
-                                <p>Best regards,<br>The Premier League Predictions team.</p>
-                            </body>
-                        </html>
-                        """
+                body = f"""Hello {user.username}, 
+                Reminder that teams will be locked in approximately 24 hours, please choose your team
+                https://premier-league-predictions-2.onrender.com/
+
+                Best regards
+
+                The Premier League Predictions team."""
 
                 send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Reminder", body)
 
