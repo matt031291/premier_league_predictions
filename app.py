@@ -707,7 +707,7 @@ def get_league_details():
 
     page = int(data.get("page", 1))
     per_page = 20  # Number of rows per page
-    if "league_name" == "Worldwide":
+    if league_name == "Worldwide":
         users = User.query.all()  # Fetch all users
     else:
         print (league_name)
