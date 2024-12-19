@@ -350,7 +350,7 @@ def keep_alive():
         return "I'm alive!", 200
 
     start_time = gameweek_teams.start_time
-    email_time = start_time - pd.Timedelta(minutes=60*45)
+    email_time = start_time - pd.Timedelta(minutes=60*24)
     now = datetime.now()
 
     if now > start_time:
