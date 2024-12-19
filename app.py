@@ -729,12 +729,13 @@ def get_league_details():
 
     members = []
     for user in users[start_index:end_index]:
+        team_choice = user.locked_team_choice if user.locked_team_choice is not None else ''
         members.append({
             "username": user.username,
             "points": user.score,
             "gold": user.gold,
             "goal_difference": 0,
-            "locked_team": user.locked_team_choice
+            "locked_team": team_choice
         })
     print (members)
     return jsonify({
