@@ -10,6 +10,13 @@ import json
 import os
 from scraper import get_gameweek_teams, get_results
 from datetime import datetime,timedelta
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import pandas as pd
+
+
+
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -51,6 +58,7 @@ class GameWeekTeams(db.Model):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.db.String(100), unique=True)
     password_hash = db.Column(db.String(150), nullable=False)
     score = db.Column(db.Float, default=0.0)
     gold = db.Column(db.Integer, default=380)
@@ -241,12 +249,13 @@ def update_scores():
                 score_for_round += 0.1
         if score_for_round is not None:
             user.score += score_for_round
+            user.score = format(user.score, '.1f')
             user.add_previous_result(user.locked_team_choice, score_for_round)
         else:
             user.add_delayed_matches(user.locked_team_choice)
         user.team_choice = None
         user.locked_team_choice = None
-        db.session.commit()
+    db.session.commit()
 
 # Routes
 @app.route('/')
@@ -341,12 +350,18 @@ def keep_alive():
         return "I'm alive!", 200
 
     start_time = gameweek_teams.start_time
+    email_time = start_time - pd.Timedelta(minutes=60*45)
     now = datetime.now()
 
     if now > start_time:
         lock_team_choices()  # Call the lock function if the condition is met
         
+    if 0 < (email_time - now).total_seconds() < 300:
+        users = User.query.all()
+        for user in users:
+            if user.email is not None:
 
+                send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Reminder to make you prediction", "Teams will be locked in approximately 24 hours, please choose your team")
 
     return "I'm alive!", 200
 
@@ -772,9 +787,40 @@ def inverse_transform_match_string(transformed_string):
     return inverse_string
 
 
+def send_email(sender_email, sender_password, receiver_email, subject, body):
+    # Set up the SMTP server
+    smtp_server = "smtp.gmail.com"  # For Gmail
+    smtp_port = 587  # Use 465 for SSL, 587 for TLS
+
+    # Create a MIME object
+    message = MIMEMultipart()
+    message['From'] = sender_email
+    message['To'] = receiver_email
+    message['Subject'] = subject
+
+    # Add the email body to the MIME message
+    message.attach(MIMEText(body, 'plain'))
+
+    # Establish a connection to the Gmail SMTP server
+    server = smtplib.SMTP(smtp_server, smtp_port)
+    server.starttls()  # Upgrade the connection to a secure encrypted SSL/TLS connection
+
+    # Log in to the SMTP server using your email and password
+    server.login(sender_email, sender_password)
+
+    # Send the email
+    server.sendmail(sender_email, receiver_email, message.as_string())
+
+    print("Email sent successfully!")
+
+
+
+    server.quit()
+
 
 if __name__ == '__main__':
     #create_database()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
