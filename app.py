@@ -360,8 +360,18 @@ def keep_alive():
         users = User.query.all()
         for user in users:
             if user.email is not None:
+                body = """
+                        <html>
+                            <body>
+                                <p>Hello,</p>
+                                <p>Teams will be locked in approximately 24 hours, please choose your team"</p>
+                                <a href="https://premier-league-predictions-2.onrender.com/">Premier League Predictions</a>
+                                <p>Best regards,<br>The Premier League Predictions team.</p>
+                            </body>
+                        </html>
+                        """
 
-                send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Reminder to make you prediction", "Teams will be locked in approximately 24 hours, please choose your team")
+                send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Reminder", body)
 
     return "I'm alive!", 200
 
@@ -369,7 +379,7 @@ def keep_alive():
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user()
+    logout_user()x
     flash('Logged out successfully.', 'success')
     return redirect(url_for('index'))
 
