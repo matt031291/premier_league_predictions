@@ -376,7 +376,7 @@ def keep_alive():
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user()x
+    logout_user()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('index'))
 
