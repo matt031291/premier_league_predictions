@@ -765,6 +765,36 @@ def get_league_details():
         "total_pages": total_pages
     })
 
+@app.route("/get_previous_resultsIOS", methods=["POST"])
+def get_previous_resultsIOS():
+    data = request.json
+    username = data.get("username")
+
+    # Fetch user from the database
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Assuming user has a 'previous_results' attribute stored as a JSON string
+    if not user.previous_results:
+        return jsonify({"results": []})  # No results
+
+    # Parse previous results
+    previous_results = json.loads(user.previous_results)
+
+    # Format results into a list of dictionaries
+    formatted_results = []
+    for gameweek, details in previous_results.items():
+        formatted_results.append({
+            "gameweek": int(gameweek),
+            "team": details.get("team", "N/A"),
+            "score": float(details.get("score", 0.0))
+        })
+
+    # Sort results by gameweek (optional)
+    formatted_results.sort(key=lambda x: x["gameweek"])
+
+    return jsonify({"results": formatted_results})
 
 
 def transform_match_string(input_string):
