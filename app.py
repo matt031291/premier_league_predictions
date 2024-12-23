@@ -275,7 +275,7 @@ def home(username):
         round = 1
     else:
         if user.delayed_matches is not None:
-            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
 
@@ -361,13 +361,10 @@ def keep_alive():
         for user in users:
             if user.email is not None:
                 body = f"""Hello {user.username}, 
-                Reminder that teams will be locked in approximately 24 hours, please choose your team
-                https://premier-league-predictions-2.onrender.com/
-
-                Best regards
-
-                The Premier League Predictions team."""
-
+Reminder that teams will be locked in approximately 24 hours, please choose your team, 
+https://premier-league-predictions-2.onrender.com/
+Best regards
+The Premier League Predictions team."""
                 send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Reminder", body)
 
     return "I'm alive!", 200
@@ -487,7 +484,7 @@ def generate_teams():
         if current_user.previous_results is None:
             round = None
         else:
-            round = len(json.loads(current_user.previous_results)) +len(json.loads(current_user.delayed_matches)) +1
+            round = len(json.loads(current_user.previous_results)) +len(json.loads(current_user.delayed_matches)) 
 
         print (round)
         # Example function call to generate new game week teams
@@ -599,7 +596,7 @@ def loginIOS():
         round = 1
     else:
         if user.delayed_matches is not None:
-            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
 
@@ -666,7 +663,7 @@ def choose_teamIOS():
         round = 1
     else:
         if user.delayed_matches is not None:
-            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) +1
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
     
