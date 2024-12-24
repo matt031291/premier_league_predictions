@@ -766,11 +766,12 @@ def get_league_details():
 def get_previous_resultsIOS():
     data = request.json
     username = data.get("username")
+    username = "matt"
 
     # Fetch user from the database
     user = User.query.filter_by(username=username).first()
     if not user:
-        return jsonify({"error": "User not found"}), 404
+        return jsonify({"error": "User not found"}), 400
 
     # Assuming user has a 'previous_results' attribute stored as a JSON string
     if not user.previous_results:
