@@ -791,7 +791,7 @@ def get_previous_resultsIOS():
     # Sort results by gameweek (optional)
     formatted_results.sort(key=lambda x: x["gameweek"])
 
-    return jsonify({"results": formatted_results})
+    return jsonify({"results": formatted_results}), 200
 
 
 def transform_match_string(input_string):
