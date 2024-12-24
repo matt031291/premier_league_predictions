@@ -771,11 +771,11 @@ def get_previous_resultsIOS():
     # Fetch user from the database
     user = User.query.filter_by(username=username).first()
     if not user:
-        return jsonify({"error": "User not found"}), 400
+        return jsonify({"error": "User not found"}), 200
 
     # Assuming user has a 'previous_results' attribute stored as a JSON string
     if not user.previous_results:
-        return jsonify({"results": []})  # No results
+        return jsonify({"results": []}),200  # No results
 
     # Parse previous results
     previous_results = json.loads(user.previous_results)
