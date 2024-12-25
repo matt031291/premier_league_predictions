@@ -350,18 +350,18 @@ def keep_alive():
         return "I'm alive!", 200
 
     start_time = gameweek_teams.start_time
-    email_time = start_time - pd.Timedelta(minutes=60*24)
+    email_time = start_time - pd.Timedelta(minutes=60*21)
     now = datetime.now()
 
     if now > start_time:
         lock_team_choices()  # Call the lock function if the condition is met
         
-    if 0 < (email_time - now).total_seconds() < 300:
+    if 0 < (email_time - now).total_seconds() < 305:
         users = User.query.all()
         for user in users:
             if user.email is not None:
                 body = f"""Hello {user.username}, 
-Reminder that teams will be locked in approximately 24 hours, please choose your team, 
+Reminder that teams will be locked in approximately 21 hours, please choose your team, 
 https://premier-league-predictions-2.onrender.com/
 Best regards
 The Premier League Predictions team."""
