@@ -883,13 +883,11 @@ def reset_password():
         if not token:
             return jsonify({"msg": "Invalid or missing token."}), 400
 
-        try:
-            # Decode the token to validate it
-            payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-            user_id = payload["user_id"]
-        except jwt.ExpiredSignatureError:
-            return jsonify({"msg": "Token has expired."}), 400
-        except jwt.InvalidTokenError:
+        # Decode the token to validate it
+        email = s.loads(token, salt='password-reset-salt', max_age=3600)  # Token valid for 1 hour
+        user = User.query.filter_by(email=email).first()
+        if not user:
+
             return jsonify({"msg": "Invalid token."}), 400
         
         # Render the reset password page and pass the token to it
