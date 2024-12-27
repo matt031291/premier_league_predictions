@@ -861,29 +861,15 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 def send_reset_emailIOS():
     data = request.json
     email = data.get('email')
-
     user = User.query.filter_by(email=email).first()
-    if user:
-
-        reset_token = generate_reset_token(user)
-        reset_url = f"https://premier-league-predictions-2.onrender.com/reset-password?token={reset_token}"
     
-        send_email(
-            'matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email,
-            subject="Password Reset Request",
-            body=f"""
-            Hi {user.username},
-
-            You requested to reset your password. Click the link below to reset your password:
-            {reset_url}
-
-            This link will expire in 1 hour. If you didn't request this, please ignore this email.
-
-            Thanks,
-            The Team
-            """
-        )
-                
+    if user:
+        token = s.dumps(email, salt='password-reset-salt')
+        reset_url = url_for('reset_password', token=token, _external=True)
+        
+        # Send email (example using smtplib)
+        send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
+        
         return jsonify({"msg": "Password reset email sent."}), 200
     else:
         return jsonify({"msg": "Email not found."}), 404
