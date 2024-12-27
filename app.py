@@ -458,15 +458,16 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        email = request.form['email']
 
         # Check if the username already exists
-        if User.query.filter_by(username=username).first() or Admin.query.filter_by(username=username).first():
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
             flash('Username already exists. Please choose a different one.', 'error')
             return redirect(url_for('login'))
 
         # Create a new user
         else:
-            new_user = User(username=username)
+            new_user = User(username=username, email=email)
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
@@ -578,6 +579,29 @@ def create_league():
     flash('League created successfully!', 'success')
     return redirect(url_for('admin'))
 
+
+@app.route('/registerIOS', methods=['POST'])
+
+def registerIOS():
+    data = request.json
+    username = data.get['username']
+    password = data.get['password']
+    email = data.get['email']
+
+    # Check if the username already exists
+    if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+        return jsonify({"msg": "Username already exists. Please choose a different one."}), 401
+
+
+    # Create a new user
+    else:
+        new_user = User(username=username, email=email)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash('Account created successfully! Please log in.', 'success')
+        return jsonify({"msg": "User successfully registered, please log in."}), 200
 
 
 @app.route('/loginIOS', methods=['POST'])
@@ -762,37 +786,7 @@ def get_league_details():
         "total_pages": total_pages
     })
 
-@app.route("/get_previous_resultsIOS", methods=["POST"])
-def get_previous_resultsIOS():
-    data = request.json
-    username = data.get("username")
-    username = "matt"
 
-    # Fetch user from the database
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({"error": "User not found"}), 200
-
-    # Assuming user has a 'previous_results' attribute stored as a JSON string
-    if not user.previous_results:
-        return jsonify({"results": []}),200  # No results
-
-    # Parse previous results
-    previous_results = json.loads(user.previous_results)
-
-    # Format results into a list of dictionaries
-    formatted_results = []
-    for gameweek, details in previous_results.items():
-        formatted_results.append({
-            "gameweek": int(gameweek),
-            "team": details.get("team", "N/A"),
-            "score": float(details.get("score", 0.0))
-        })
-
-    # Sort results by gameweek (optional)
-    formatted_results.sort(key=lambda x: x["gameweek"])
-
-    return jsonify({"results": formatted_results}), 200
 
 
 def transform_match_string(input_string):
