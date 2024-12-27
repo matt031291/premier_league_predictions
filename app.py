@@ -858,7 +858,7 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
     return jsonify({"msg": "Password reset email sent."}), 200
 
 @app.route('/send_reset_emailIOS', methods=['POST'])
-def send_reset_emailIOS(user):
+def send_reset_emailIOS():
     data = request.json
     email = data.get('email')
 
