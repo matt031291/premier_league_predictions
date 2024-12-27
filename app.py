@@ -855,43 +855,72 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 
 
 
+    return jsonify({"msg": "Password reset email sent."}), 200
 
-@app.route('/send_reset_emailIOS', methods=['POST'])
-def send_reset_emailIOS():
-    data = request.json
-    email = data.get('email')
-    user = User.query.filter_by(email=email).first()
+
+def send_reset_email(user):
+    reset_token = generate_reset_token(user)
+    reset_url = f"https://premier-league-predictions-2.onrender.com/reset-password?token={reset_token}"
     
-    if user:
+    send_email(
+        'matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email,
+        subject="Password Reset Request",
+        body=f"""
+        Hi {user.username},
 
-        token = s.dumps(email, salt='password-reset-salt')
-        reset_url = url_for('reset_password', token=token, _external=True)
-        
-        # Send email (example using smtplib)
-        send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
-        
-        return jsonify({"msg": "Password reset email sent."}), 200
-    else:
-        return jsonify({"msg": "Email not found."}), 404
+        You requested to reset your password. Click the link below to reset your password:
+        {reset_url}
 
-@app.route('/reset_password/<token>', methods=['POST'])
-def reset_password(token):
-    try:
-        email = s.loads(token, salt='password-reset-salt', max_age=3600)  # Token valid for 1 hour
-        data = request.json
-        new_password = data.get('new_password')
-        user = User.query.filter_by(email=email).first()
-        
-        if user:
-            user.set_password(new_password)  # Assuming a method exists to hash and save password
+        This link will expire in 1 hour. If you didn't request this, please ignore this email.
+
+        Thanks,
+        The Team
+        """
+    )
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'GET':
+        token = request.args.get('token', '')
+        return render_template('reset_password.html', token=token)
+
+    if request.method == 'POST':
+        token = request.form['token']
+        new_password = request.form['password']
+
+        try:
+            payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            user_id = payload["user_id"]
+
+            user = User.query.get(user_id)
+            if not user:
+                return "Invalid token or user not found.", 400
+
+            user.set_password(new_password)  # Replace with your password hashing method
             db.session.commit()
-            return jsonify({"msg": "Password successfully reset."}), 200
-        else:
-            return jsonify({"msg": "User not found."}), 404
-    except Exception as e:
-        return jsonify({"msg": "Invalid or expired token."}), 400
+
+            return "Password successfully reset.", 200
+
+        except jwt.ExpiredSignatureError:
+            return "Token has expired.", 400
+        except jwt.InvalidTokenError:
+            return "Invalid token.", 400
 
 
+def generate_reset_token(user):
+    """
+    Generates a JWT token for password reset.
+    :param user: User object containing user details
+    :return: Encoded JWT token
+    """
+    expiration_time = datetime.utcnow() + timedelta(hours=1)  # Token valid for 1 hour
+    payload = {
+        "user_id": user.id,  # Include the user's ID
+        "email": user.email,  # Include the user's email
+        "exp": expiration_time  # Expiration time
+    }
+    token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm="HS256")
+    return token
 
 if __name__ == '__main__':
     #create_database()
