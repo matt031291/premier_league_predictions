@@ -13,6 +13,8 @@ from datetime import datetime,timedelta
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from itsdangerous import URLSafeTimedSerializer
+import smtplib
 import pandas as pd
 
 
@@ -21,6 +23,7 @@ import pandas as pd
 app = Flask(__name__)
 app.config.from_object('config.Config')
 jwt = JWTManager(app)
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -590,7 +593,7 @@ def registerIOS():
 
     # Check if the username already exists
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({"msg": "Username already exists. Please choose a different one."}), 401
+        return jsonify({"msg": "Username or password already exists.//Please choose a different one."}), 401
 
 
     # Create a new user
@@ -742,6 +745,8 @@ def get_leaguesIOS():
         return jsonify({"error": str(e)}), 500
 
 
+
+
 @app.route('/get_league_detailsIOS', methods=['POST'])
 def get_league_details():
     data = request.json
@@ -845,6 +850,47 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 
 
     server.quit()
+
+
+
+
+
+
+@app.route('/send_reset_emailIOS', methods=['POST'])
+def send_reset_emailIOS():
+    data = request.json
+    email = data.get('email')
+    user = User.query.filter_by(email=email).first()
+    
+    if user:
+
+        token = s.dumps(email, salt='password-reset-salt')
+        reset_url = url_for('reset_password', token=token, _external=True)
+        
+        # Send email (example using smtplib)
+        send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
+        
+        return jsonify({"msg": "Password reset email sent."}), 200
+    else:
+        return jsonify({"msg": "Email not found."}), 404
+
+@app.route('/reset_password/<token>', methods=['POST'])
+def reset_password(token):
+    try:
+        email = s.loads(token, salt='password-reset-salt', max_age=3600)  # Token valid for 1 hour
+        data = request.json
+        new_password = data.get('new_password')
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            user.set_password(new_password)  # Assuming a method exists to hash and save password
+            db.session.commit()
+            return jsonify({"msg": "Password successfully reset."}), 200
+        else:
+            return jsonify({"msg": "User not found."}), 404
+    except Exception as e:
+        return jsonify({"msg": "Invalid or expired token."}), 400
+
 
 
 if __name__ == '__main__':
