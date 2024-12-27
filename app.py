@@ -881,31 +881,49 @@ def send_reset_email(user):
 @app.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
+        # Get the token from the query string
         token = request.args.get('token', '')
+        
+        if not token:
+            return jsonify({"msg": "Invalid or missing token."}), 400
+
+        try:
+            # Decode the token to validate it
+            payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            user_id = payload["user_id"]
+        except jwt.ExpiredSignatureError:
+            return jsonify({"msg": "Token has expired."}), 400
+        except jwt.InvalidTokenError:
+            return jsonify({"msg": "Invalid token."}), 400
+        
+        # Render the reset password page and pass the token to it
         return render_template('reset_password.html', token=token)
 
     if request.method == 'POST':
+        # Get the token and new password from the form
         token = request.form['token']
         new_password = request.form['password']
 
         try:
+            # Decode the token to validate it
             payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
             user_id = payload["user_id"]
 
+            # Fetch the user from the database
             user = User.query.get(user_id)
             if not user:
-                return "Invalid token or user not found.", 400
+                return jsonify({"msg": "User not found."}), 400
 
-            user.set_password(new_password)  # Replace with your password hashing method
+            # Reset the user's password
+            user.set_password(new_password)
             db.session.commit()
 
-            return "Password successfully reset.", 200
+            return jsonify({"msg": "Password successfully reset."}), 200
 
         except jwt.ExpiredSignatureError:
-            return "Token has expired.", 400
+            return jsonify({"msg": "Token has expired."}), 400
         except jwt.InvalidTokenError:
-            return "Invalid token.", 400
-
+            return jsonify({"msg": "Invalid token."}), 400
 
 def generate_reset_token(user):
     """
