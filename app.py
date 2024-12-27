@@ -586,7 +586,7 @@ def registerIOS():
     data = request.json
     username = data.get('username')
     password = data.get('password')
-    email = data.get['email']
+    email = data.get('email')
 
     # Check if the username already exists
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
