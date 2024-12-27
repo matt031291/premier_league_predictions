@@ -584,8 +584,8 @@ def create_league():
 
 def registerIOS():
     data = request.json
-    username = data.get['username']
-    password = data.get['password']
+    username = data.get('username')
+    password = data.get('password')
     email = data.get['email']
 
     # Check if the username already exists
