@@ -857,26 +857,36 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 
     return jsonify({"msg": "Password reset email sent."}), 200
 
+@app.route('/send_reset_emailIOS', methods=['POST'])
+def send_reset_emailIOS(user):
+    data = request.json
+    email = data.get('email')
 
-def send_reset_email(user):
-    reset_token = generate_reset_token(user)
-    reset_url = f"https://premier-league-predictions-2.onrender.com/reset-password?token={reset_token}"
+    user = User.query.filter_by(email=email).first()
+    if user:
+
+        reset_token = generate_reset_token(user)
+        reset_url = f"https://premier-league-predictions-2.onrender.com/reset-password?token={reset_token}"
     
-    send_email(
-        'matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email,
-        subject="Password Reset Request",
-        body=f"""
-        Hi {user.username},
+        send_email(
+            'matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email,
+            subject="Password Reset Request",
+            body=f"""
+            Hi {user.username},
 
-        You requested to reset your password. Click the link below to reset your password:
-        {reset_url}
+            You requested to reset your password. Click the link below to reset your password:
+            {reset_url}
 
-        This link will expire in 1 hour. If you didn't request this, please ignore this email.
+            This link will expire in 1 hour. If you didn't request this, please ignore this email.
 
-        Thanks,
-        The Team
-        """
-    )
+            Thanks,
+            The Team
+            """
+        )
+                
+        return jsonify({"msg": "Password reset email sent."}), 200
+    else:
+        return jsonify({"msg": "Email not found."}), 404
 
 @app.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
