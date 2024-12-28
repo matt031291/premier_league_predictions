@@ -620,8 +620,12 @@ def loginIOS():
     admin = User.query.filter_by(username="admin").first()
     teams = read_current_gameweek_teams()
     teams_new_string = {}
-    for key,value in teams.items():
-        teams_new_string[transform_match_string(key)] = value
+    if user.doubleup:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = value
+    else:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = value
     if admin.previous_results is None:
         round = 1
     else:
@@ -692,8 +696,12 @@ def choose_teamIOS():
 
 
     teams_new_string = {}
-    for key,value in teams.items():
-        teams_new_string[transform_match_string(key)] = value
+    if user.doubleup:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = value
+    else:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = value
     if admin.previous_results is None:
         round = 1
     else:
@@ -727,6 +735,61 @@ def choose_teamIOS():
         'doubleupsleft':user.doubleupsleft
     }), 200
 
+
+
+
+@app.route('/doubleupIOS', methods=['POST'])
+def doubleupOS():
+    data = request.json
+    username = data.get('username')
+    doubleup = data.get('doubleUp')
+    admin = User.query.filter_by(username="admin").first()
+
+    user = User.query.filter_by(username=username).first()
+
+    user.doubleup = doubleup
+    db.session.commit()
+        # Get game week teams
+    teams = read_current_gameweek_teams()
+    teams_new_string = {}
+    if user.doubleup:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = value
+    else:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = value
+    if admin.previous_results is None:
+        round = 1
+    else:
+        if user.delayed_matches is not None:
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
+        else:
+            round = len(json.loads(admin.previous_results)) +1 
+    
+    if user.team_choice is None:
+        team_choice = ""
+    else:
+        team_choice = transform_match_string(user.team_choice)
+    if user.locked_team_choice is None:
+        locked_team_choice = ""
+    else:
+        locked_team_choice = transform_match_string(user.locked_team_choice)
+
+    if locked_team_choice != "":
+        presented_team_choice = locked_team_choice
+    else:
+        presented_team_choice = team_choice
+    return jsonify({
+        'access_token': "",
+        'username': user.username,
+        'score': user.score,
+        'gold': user.gold,
+        'team_choice': presented_team_choice,
+        'round': round,
+        'teams': teams_new_string, 
+        'doubleup':user.doubleup,
+        'doubleupsleft':user.doubleupsleft
+    }), 200
 
 
 @app.route('/getLeaguesIOS', methods=['POST'])
