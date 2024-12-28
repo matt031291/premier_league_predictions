@@ -17,8 +17,8 @@ from itsdangerous import URLSafeTimedSerializer
 import smtplib
 import pandas as pd
 
-
-
+TEAM_MAPS = {"Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"Wol","AstonVilla":"AVL","Brigton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
+REVERSE_TEAM_MAPS = {value:key for key,value in TEAM_MAPS.items()}
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -653,7 +653,9 @@ def loginIOS():
             'gold': user.gold,
             'team_choice': presented_team_choice,
             'round': round,
-            'teams': teams_new_string 
+            'teams': teams_new_string,
+            'doubleup':user.doubleup,
+            'doubleupsleft':user.doubleupsleft
         }), 200
     return jsonify({"msg": "Invalid username or password"}), 401
 
@@ -720,7 +722,9 @@ def choose_teamIOS():
         'gold': user.gold,
         'team_choice': presented_team_choice,
         'round': round,
-        'teams': teams_new_string 
+        'teams': teams_new_string, 
+        'doubleup':user.doubleup,
+        'doubleupsleft':user.doubleupsleft
     }), 200
 
 
