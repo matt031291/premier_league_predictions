@@ -622,7 +622,7 @@ def loginIOS():
     teams_new_string = {}
     if user.doubleup:
         for key,value in teams.items():
-            teams_new_string[transform_match_string(key)] = value
+            teams_new_string[transform_match_string(key)] = 2*value
     else:
         for key,value in teams.items():
             teams_new_string[transform_match_string(key)] = value
@@ -698,7 +698,7 @@ def choose_teamIOS():
     teams_new_string = {}
     if user.doubleup:
         for key,value in teams.items():
-            teams_new_string[transform_match_string(key)] = value
+            teams_new_string[transform_match_string(key)] = 2*value
     else:
         for key,value in teams.items():
             teams_new_string[transform_match_string(key)] = value
@@ -754,7 +754,7 @@ def doubleupOS():
     teams_new_string = {}
     if user.doubleup:
         for key,value in teams.items():
-            teams_new_string[transform_match_string(key)] = value
+            teams_new_string[transform_match_string(key)] = 2*value
     else:
         for key,value in teams.items():
             teams_new_string[transform_match_string(key)] = value
