@@ -640,13 +640,16 @@ def loginIOS():
             locked_team_choice = ""
         else:
             locked_team_choice = transform_match_string(user.locked_team_choice)
+        if locked_team_choice != "":
+            presented_team_choice = locked_team_choice
+        else:
+            presented_team_choice = team_choice
         return jsonify({
             'access_token': token,
             'username': user.username,
             'score': user.score,
             'gold': user.gold,
-            'team_choice': team_choice,
-            'locked_team_choice': locked_team_choice,
+            'team_choice': presented_team_choice,
             'round': round,
             'teams': teams_new_string 
         }), 200
@@ -703,13 +706,17 @@ def choose_teamIOS():
         locked_team_choice = ""
     else:
         locked_team_choice = transform_match_string(user.locked_team_choice)
+
+    if locked_team_choice != "":
+        presented_team_choice = locked_team_choice
+    else:
+        presented_team_choice = team_choice
     return jsonify({
         'access_token': "",
         'username': user.username,
         'score': user.score,
         'gold': user.gold,
-        'team_choice': team_choice,
-        'locked_team_choice': locked_team_choice,
+        'team_choice': presented_team_choice,
         'round': round,
         'teams': teams_new_string 
     }), 200
