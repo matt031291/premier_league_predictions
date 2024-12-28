@@ -56,6 +56,8 @@ class GameWeekTeams(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(db.Text, nullable=False)
     start_time = db.Column(db.TIMESTAMP)
+    end_time = db.Column(db.TIMESTAMP)
+
 
 # User model
 class User(UserMixin, db.Model):
