@@ -201,7 +201,7 @@ def lock_team_choices():
                             user.doubleup = False
                     break
         else:
-            random_value = np.random.randint(1,9)
+            random_value = np.random.randint(1,5)
             for key, value in teams.items():
                 if value == random_value:
                     user.gold -= 10
@@ -363,12 +363,13 @@ def keep_alive():
         users = User.query.all()
         for user in users:
             if user.email is not None:
-                body = f"""Hello {user.username}, 
-Reminder that teams will be locked in approximately 21 hours, please choose your team, 
-https://premier-league-predictions-2.onrender.com/
-Best regards
-The Premier League Predictions team."""
-                send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Reminder", body)
+                if user.team_choice is not None:
+                    body = f"""Hello {user.username}, 
+    Reminder that teams will be locked in approximately 21 hours, please choose your team, 
+    https://premier-league-predictions-2.onrender.com/
+    Best regards
+    The Premier League Predictions team."""
+                    send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Reminder", body)
 
     return "I'm alive!", 200
 
