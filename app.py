@@ -495,7 +495,7 @@ def generate_teams():
 
         print (round)
         # Example function call to generate new game week teams
-        new_teams, start_gameweek = get_gameweek_teams(round)
+        new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
         update_gameweek_teams(new_teams, start_gameweek)
         # Update all users with new teams (example logic)
         users = User.query.all()

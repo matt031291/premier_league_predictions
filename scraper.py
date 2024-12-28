@@ -70,13 +70,14 @@ def get_gameweek_teams(round):
     URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
-    print (22222222)
-    print (round)
+
     soup = BeautifulSoup(response.text, 'html.parser')
     data = fetch_data_fixtures(soup,round)
 
     data['Date'] = data['Date'].apply(process_date)
     first_game = data['Date'].min() - pd.Timedelta(minutes=90)
+    last_game = data['Date'].max() + pd.Timedelta(minutes=240)
+
 
     data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
     data['home'] = data['home1'] + '_' + data['away1'] +'_H'
@@ -93,7 +94,7 @@ def get_gameweek_teams(round):
     sorted_odds= dict(sorted(odds.items(), key=lambda item: float(item[1])))
     ordered_list = list(sorted_odds.keys())
     L =  (20-len(ordered_list))/2
-    return {ordered_list[i].strip():20-i-L for i in range(len(ordered_list))}, first_game
+    return {ordered_list[i].strip():20-i-L for i in range(len(ordered_list))}, first_game, last_game
 
 
 
