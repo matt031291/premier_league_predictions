@@ -74,6 +74,7 @@ class User(UserMixin, db.Model):
     league_ids = db.Column(db.Text, default='[]')
     doubleup = db.Column(db.Boolean, default=False)
     doubleupsleft = db.Column(db.Integer, default = 2)
+    rank = db.Column(db.Integer, default = 1)
 
 
     def set_password(self, password):
@@ -350,6 +351,9 @@ def signup():
 
 @app.route('/keep-alive')
 def keep_alive():
+
+
+    
     gameweek_teams = GameWeekTeams.query.first()  # Retrieve the first record
     if not gameweek_teams:
         return "I'm alive!", 200
@@ -844,7 +848,7 @@ def get_league_details():
 
         # Fetch users in the league
         user_ids = json.loads(league.user_ids) if league.user_ids else []
-        users = User.query.filter(User.id.in_(user_ids)).all()
+        sorted_users = User.query.order_by(User.score.desc(), User.gold.desc()).all()
 
     # Prepare the paginated member list
     total_members = len(users)
@@ -853,7 +857,7 @@ def get_league_details():
     end_index = start_index + per_page
 
     members = []
-    for user in users[start_index:end_index]:
+    for user in sorted_users[start_index:end_index]:
         team_choice = user.locked_team_choice if user.locked_team_choice is not None else ''
         if team_choice != '':
             transformed_team_choice = transform_match_string(team_choice)
