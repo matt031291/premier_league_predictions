@@ -897,7 +897,7 @@ def shorten_match_string(input_str):
     HorA = input_str[-1]
     away_new = TEAM_MAPS[away[0:-2]]
     home_new = TEAM_MAPS[home]
-    return home_new + 'v' + away_new +HorA
+    return home_new
 
 
 def inverse_transform_match_string(transformed_string):
