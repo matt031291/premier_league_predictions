@@ -837,7 +837,7 @@ def get_league_details():
     page = int(data.get("page", 1))
     per_page = 10  # Number of rows per page
     if league_name == "Worldwide":
-        users = User.query.all()  # Fetch all users
+        users = User.query.order_by(User.score.desc(), User.gold.desc()).all()  # Fetch all users
     else:
         print (league_name)
         print (type(league_name))
@@ -848,7 +848,7 @@ def get_league_details():
 
         # Fetch users in the league
         user_ids = json.loads(league.user_ids) if league.user_ids else []
-        sorted_users = User.query.order_by(User.score.desc(), User.gold.desc()).all()
+        users = User.query.filter(User.id.in_(user_ids)).order_by(User.score.desc(), User.gold.desc()).all()
 
     # Prepare the paginated member list
     total_members = len(users)
@@ -857,7 +857,7 @@ def get_league_details():
     end_index = start_index + per_page
 
     members = []
-    for user in sorted_users[start_index:end_index]:
+    for user in users[start_index:end_index]:
         team_choice = user.locked_team_choice if user.locked_team_choice is not None else ''
         if team_choice != '':
             transformed_team_choice = transform_match_string(team_choice)
