@@ -855,12 +855,14 @@ def get_league_details():
     members = []
     for user in users[start_index:end_index]:
         team_choice = user.locked_team_choice if user.locked_team_choice is not None else ''
+        transformed_team_choice = transform_match_string(team_choice)
+        shortened_team_choice = shorten_match_string(transformed_team_choice)
         members.append({
             "username": user.username,
             "points": user.score,
             "gold": user.gold,
             "goal_difference": 0,
-            "locked_team": team_choice
+            "locked_team": shortened_team_choice
         })
     print (members)
     return jsonify({
@@ -882,6 +884,13 @@ def transform_match_string(input_string):
 
 
     return transformed_string
+
+def shorten_match_string(input_str):
+    home,away = input_str.split(' vs ')
+    HorA = input_str[-1]
+    away_new = TEAM_MAPS[away[0:-2]]
+    home_new = TEAM_MAPS[home]
+    return home + 'v' + away +HorA
 
 
 def inverse_transform_match_string(transformed_string):
