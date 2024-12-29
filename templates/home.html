@@ -147,10 +147,14 @@
         <div class="toggle-container">
             <span class="toggle-label">Double Jeopardy:</span>
             <label class="toggle-button">
-                <input type="checkbox" id="doubleJeopardyToggle" {% if doubleup %}checked{% endif %}>
+                <input 
+                    type="checkbox" 
+                    id="doubleJeopardyToggle" 
+                    {% if doubleup %}checked{% endif %} 
+                    {% if teams|length == 0 %}disabled{% endif %}>
                 <span class="slider"></span>
             </label>
-        </div>
+        </div>        
         <h2>Next Matches:</h2>
         <form action="{{ url_for('choose_team') }}" method="POST" class="teams-form">
             <ul class="teams-list">
