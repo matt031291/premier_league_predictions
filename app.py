@@ -862,7 +862,7 @@ def get_league_details():
             shortened_team_choice = ''
         members.append({
             "username": user.username,
-            "points": user.score,
+            "points": round(user.score,1),
             "gold": user.gold,
             "goal_difference": 0,
             "locked_team": shortened_team_choice
