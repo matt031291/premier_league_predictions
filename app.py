@@ -855,7 +855,7 @@ def get_league_details():
     members = []
     for user in users[start_index:end_index]:
         team_choice = user.locked_team_choice if user.locked_team_choice is not None else ''
-        if team_choice is not '':
+        if team_choice != '':
             transformed_team_choice = transform_match_string(team_choice)
             shortened_team_choice = shorten_match_string(transformed_team_choice)
         else:
