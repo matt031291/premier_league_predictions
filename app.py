@@ -167,9 +167,13 @@ def update_gameweek_teams(data, start_gameweek, end_gameweek):
     if gameweek_teams:
         gameweek_teams.data = json.dumps(data)
         gameweek_teams.start_time = start_gameweek
-        gameweek_teams.end_time = end_gameweek
+        if end_gameweek is not None:
+            gameweek_teams.end_time = end_gameweek
     else:
-        new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek)
+        if end_gameweek is not None:
+            new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek)
+        else:
+            new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek)
         db.session.add(new_gameweek_teams)
     db.session.commit()
 
@@ -221,7 +225,7 @@ def lock_team_choices():
     
 
     teams = {}
-    update_gameweek_teams(teams, new_time)
+    update_gameweek_teams(teams, new_time,None)
 
 # Function to update scores and reset team choices
 def update_scores():
