@@ -162,13 +162,14 @@ def load_user(user_id):
         return Admin.query.get(int(user_id))
 
 # Function to update game week teams in DB
-def update_gameweek_teams(data, start_gameweek):
+def update_gameweek_teams(data, start_gameweek, end_gameweek):
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams:
         gameweek_teams.data = json.dumps(data)
         gameweek_teams.start_time = start_gameweek
+        gameweek_teams.end_time = end_gameweek
     else:
-        new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek)
+        new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek)
         db.session.add(new_gameweek_teams)
     db.session.commit()
 
@@ -500,7 +501,7 @@ def generate_teams():
         print (round)
         # Example function call to generate new game week teams
         new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
-        update_gameweek_teams(new_teams, start_gameweek)
+        update_gameweek_teams(new_teams, start_gameweek, end_gameweek)
         # Update all users with new teams (example logic)
         users = User.query.all()
         for user in users:
