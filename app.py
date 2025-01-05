@@ -948,12 +948,31 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 
 
     server.quit()
-
-
-
-
-
     return jsonify({"msg": "Password reset email sent."}), 200
+
+@app.route('/registerLeagueIOS', methods=['POST'])
+def register_league():
+    # Parse the JSON body of the request
+    data = request.get_json()
+    league_name = data.get('league_name')
+    league_password = data.get('league_password')
+
+    
+    league = League.query.filter_by(name=league_name).first()
+    
+    if league and league.check_password(league_password):
+        user_ids = json.loads(league.user_ids)
+        if current_user.id not in user_ids:
+            current_user.add_league_id(league.id)
+            league.add_user_id(current_user.id)
+            db.session.commit()
+
+            return jsonify({"message": f"Successfully registered for {league_name}!"}), 200
+        else:
+            return jsonify({"message": f"User already registered for {league_name}!"}), 200
+    else:
+        return jsonify({"message": f"Incorrect league name of password"}), 200
+
 
 @app.route('/send_reset_emailIOS', methods=['POST'])
 def send_reset_emailIOS():
