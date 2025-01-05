@@ -960,8 +960,8 @@ def register_leagueIOS():
 
         league_name = data.get('league_name')
         league_password = data.get('league_password')
-        current_user = data.get('current_user')
-
+        username = data.get('username')
+        current_user = User.query.filter_by(username=username).first()
         if not league_name or not league_password:
             return jsonify({"message": "League name and password are required"}), 400
 
