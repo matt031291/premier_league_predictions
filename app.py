@@ -961,11 +961,11 @@ def register_leagueIOS():
         league_name = data.get('league_name')
         league_password = data.get('league_password')
 
-        #if not league_name or not league_password:
-        #    return jsonify({"message": "League name and password are required"}), 400
+        if not league_name or not league_password:
+            return jsonify({"message": "League name and password are required"}), 400
 
         # Query for the league by name
-        #league = League.query.filter_by(name=league_name).first()
+        league = League.query.filter_by(name=league_name).first()
 
         #if league and league.check_password(league_password):
         #    user_ids = json.loads(league.user_ids)
