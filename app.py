@@ -954,12 +954,12 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 def register_leagueIOS():
     try:
         # Parse the JSON body of the request
-        #data = request.get_json()
-        #if not data:
-        #    return jsonify({"message": "Invalid request data"}), 400
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "Invalid request data"}), 400
 
-        #league_name = data.get('league_name')
-        #league_password = data.get('league_password')
+        league_name = data.get('league_name')
+        league_password = data.get('league_password')
 
         #if not league_name or not league_password:
         #    return jsonify({"message": "League name and password are required"}), 400
