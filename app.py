@@ -951,27 +951,39 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
     return jsonify({"msg": "Password reset email sent."}), 200
 
 @app.route('/registerLeagueIOS', methods=['POST'])
-def register_league():
-    # Parse the JSON body of the request
-    data = request.get_json()
-    league_name = data.get('league_name')
-    league_password = data.get('league_password')
+def register_leagueIOS():
+    try:
+        # Parse the JSON body of the request
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "Invalid request data"}), 400
 
-    
-    league = League.query.filter_by(name=league_name).first()
-    
-    if league and league.check_password(league_password):
-        user_ids = json.loads(league.user_ids)
-        if current_user.id not in user_ids:
-            current_user.add_league_id(league.id)
-            league.add_user_id(current_user.id)
-            db.session.commit()
+        league_name = data.get('league_name')
+        league_password = data.get('league_password')
 
-            return jsonify({"message": f"Successfully registered for {league_name}!"}), 200
+        if not league_name or not league_password:
+            return jsonify({"message": "League name and password are required"}), 400
+
+        # Query for the league by name
+        league = League.query.filter_by(name=league_name).first()
+
+        if league and league.check_password(league_password):
+            user_ids = json.loads(league.user_ids)
+            if current_user.id not in user_ids:
+                current_user.add_league_id(league.id)
+                league.add_user_id(current_user.id)
+                db.session.commit()
+
+                return jsonify({"message": f"Successfully registered for {league_name}!"}), 200
+            else:
+                return jsonify({"message": f"User already registered for {league_name}!"}), 200
         else:
-            return jsonify({"message": f"User already registered for {league_name}!"}), 200
-    else:
-        return jsonify({"message": f"Incorrect league name of password"}), 200
+            return jsonify({"message": "Incorrect league name or password"}), 401  # Changed to 401 (Unauthorized)
+    
+    except Exception as e:
+        # Log the exception for debugging
+        app.logger.error(f"Error in register_leagueIOS: {e}")
+        return jsonify({"message": "An internal error occurred"}), 500
 
 
 @app.route('/send_reset_emailIOS', methods=['POST'])
