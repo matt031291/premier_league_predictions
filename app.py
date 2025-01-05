@@ -29,6 +29,17 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+@app.route('/live-fixtures', methods=['GET'])
+def live_fixtures():
+    fixtures = [
+        {"team1": "Team A", "team2": "Team B", "score1": 1, "score2": 2},
+        {"team1": "Team C", "team2": "Team D", "score1": 3, "score2": 3},
+        {"team1": "Team E", "team2": "Team F", "score1": 0, "score2": 1},
+        {"team1": "Team G", "team2": "Team H", "score1": 2, "score2": 0}
+    ]
+    return jsonify({"fixtures": fixtures})
+
+
 class League(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
