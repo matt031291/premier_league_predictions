@@ -960,6 +960,7 @@ def register_leagueIOS():
 
         league_name = data.get('league_name')
         league_password = data.get('league_password')
+        current_user = data.get('current_user')
 
         if not league_name or not league_password:
             return jsonify({"message": "League name and password are required"}), 400
@@ -967,18 +968,18 @@ def register_leagueIOS():
         # Query for the league by name
         league = League.query.filter_by(name=league_name).first()
 
-        #if league and league.check_password(league_password):
-        #    user_ids = json.loads(league.user_ids)
-        #    if current_user.id not in user_ids:
-        #        current_user.add_league_id(league.id)
-        #        league.add_user_id(current_user.id)
-        #        db.session.commit()
+        if league and league.check_password(league_password):
+            user_ids = json.loads(league.user_ids)
+            if current_user.id not in user_ids:
+                current_user.add_league_id(league.id)
+                league.add_user_id(current_user.id)
+                db.session.commit()
 
-        return jsonify({"message": f"Successfully registered for {123}!"}), 200
-        #    else:
-        #        return jsonify({"message": f"User already registered for {league_name}!"}), 200
-        #else:
-        #    return jsonify({"message": "Incorrect league name or password"}), 401  # Changed to 401 (Unauthorized)
+                return jsonify({"message": f"Successfully registered for {league_name}!"}), 200
+            else:
+                return jsonify({"message": f"User already registered for {league_name}!"}), 200
+        else:
+            return jsonify({"message": "Incorrect league name or password"}), 401  # Changed to 401 (Unauthorized)
     
     except Exception as e:
         # Log the exception for debugging
