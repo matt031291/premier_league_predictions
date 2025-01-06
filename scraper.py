@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from datetime import datetime
+TEAM_MAPS = {"Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"Wol","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
 
 def fetch_data_fixtures(soup, round ):
     table_matches = soup.find('table')#, attrs={'class':'table-main js-tablebanner-t js-tablebanner-ntb'})
@@ -217,7 +218,7 @@ def get_round_scores(round):
     scores = []
     for _,row in data.iterrows():
         h,a = row.result.split(':')
-        score = {"team1": row['home1'], "team2": row['away1'], "score1": int(h), "score2": int(a)}
+        score = {"team1": TEAM_MAPS[row['home1'].replace(' ','')], "team2": TEAM_MAPS[row['home1'].replace(' ','')], "score1": int(h), "score2": int(a)}
 
         scores += [score]
     return scores
