@@ -124,7 +124,6 @@ def fetch_data_results(soup):
     rows = table_matches.find_all('tr')
     data=[]
     for row in rows:
-        print (row)
         utils = []
         cols = row.find_all('td')
         utils = [button['data-odd'] for button in row.find_all('button')]
@@ -167,3 +166,58 @@ def get_results():
         points[row['away']]= float(row['points_away'])
 
     return points
+
+
+def fetch_data_scores(soup, round):
+    table_matches = soup.find('table')#, attrs={'class':'table-main js-tablebanner-t js-tablebanner-ntb'})
+    data = []
+    rows = table_matches.find_all('tr')
+    data=[]
+    total_rounds = 0
+    for row in rows:
+        if 'Round' in row.text and str(round -1)+'.' in row.text:
+            total_rounds += 1
+            if total_rounds == 1:
+                break
+        utils = []
+        cols = row.find_all('td')
+        utils = [button['data-odd'] for button in row.find_all('button')]
+        # Extract fixture name
+        for element in cols:
+            try:
+                # Store the odds that win and didnt win
+                if 'data-odd' in element.attrs:
+                    pass
+                else:
+                    utils.append(element.span.span.span['data-odd'])
+            except:
+                # Store the text
+                utils.append(element.text)
+
+        if len(utils) == 4:
+            data.append(utils)
+
+
+    df = pd.DataFrame(data,columns=["Match","result","odds","date"])
+    return df
+
+def get_round_scores(round):
+    URL = "https://www.betexplorer.com/football/england/premier-league/results/"
+    response = requests.get(URL)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    data = fetch_data_scores(soup, round)
+    data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
+    data['home'] = data['home1'] + '_' + data['away1'] +'_H'
+    data['away'] = data['away1'] + '_' + data['home1'] +'_A'
+    data['home']=data['home'].str.replace(' ','')
+    data['away']=data['away'].str.replace(' ','')
+
+
+    scores = []
+    for _,row in data.iterrows():
+        h,a = row.result.split(':')
+        score = {"team1": row['home'], "team2": row['away'], "score1": int(h), "score2": int(a)}
+
+        scores += [score]
+    return scores

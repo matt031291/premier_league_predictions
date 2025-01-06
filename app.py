@@ -63,6 +63,7 @@ class GameWeekTeams(db.Model):
     data = db.Column(db.Text, nullable=False)
     start_time = db.Column(db.TIMESTAMP)
     end_time = db.Column(db.TIMESTAMP)
+    round_results = db.Column(db.Text)
 
 
 # User model
