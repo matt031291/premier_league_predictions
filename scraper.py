@@ -124,6 +124,7 @@ def fetch_data_results(soup):
     rows = table_matches.find_all('tr')
     data=[]
     for row in rows:
+        print (row)
         utils = []
         cols = row.find_all('td')
         utils = [button['data-odd'] for button in row.find_all('button')]

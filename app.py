@@ -8,7 +8,7 @@ import math
 import re
 import json
 import os
-from scraper import get_gameweek_teams, get_results
+from scraper import get_gameweek_teams, get_results, get_round_scores
 from datetime import datetime,timedelta
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -31,12 +31,7 @@ login_manager.login_view = 'login'
 
 @app.route('/live-fixtures', methods=['GET'])
 def live_fixtures():
-    fixtures = [
-        {"team1": "Team A", "team2": "Team B", "score1": 1, "score2": 2},
-        {"team1": "Team C", "team2": "Team D", "score1": 3, "score2": 3},
-        {"team1": "Team E", "team2": "Team F", "score1": 0, "score2": 1},
-        {"team1": "Team G", "team2": "Team H", "score1": 2, "score2": 0}
-    ]
+    fixtures = get_round_scores()
     return jsonify({"fixtures": fixtures})
 
 
