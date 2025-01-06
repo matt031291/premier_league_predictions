@@ -90,7 +90,8 @@ class User(UserMixin, db.Model):
     doubleup = db.Column(db.Boolean, default=False)
     doubleupsleft = db.Column(db.Integer, default = 2)
     rank = db.Column(db.Integer, default = 1)
-
+    GD_bonus = db.Column(db.Boolean, default=False)
+    GD_bonus_left = db.Column(db.Integer, default = 2)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
