@@ -218,7 +218,7 @@ def get_round_scores(round):
     scores = []
     for _,row in data.iterrows():
         h,a = row.result.split(':')
-        score = {"team1": TEAM_MAPS[row['home1'].replace(' ','')], "team2": TEAM_MAPS[row['home1'].replace(' ','')], "score1": int(h), "score2": int(a)}
+        score = {"team1": TEAM_MAPS[row['home1'].replace(' ','')], "team2": TEAM_MAPS[row['away1'].replace(' ','')], "score1": int(h), "score2": int(a)}
 
         scores += [score]
     return scores
