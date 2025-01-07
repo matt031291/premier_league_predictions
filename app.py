@@ -380,7 +380,7 @@ def keep_alive():
         return "I'm alive!", 200
 
     start_time = gameweek_teams.start_time
-    email_time = start_time - pd.Timedelta(minutes=60*21)
+    email_time = start_time - pd.Timedelta(minutes=60*24)
     now = datetime.now()
 
     if now > start_time:
@@ -392,11 +392,11 @@ def keep_alive():
             if user.email is not None:
                 if user.team_choice is not None:
                     body = f"""Hello {user.username}, 
-    Reminder that teams will be locked in approximately 21 hours, please choose your team, 
+    Reminder that teams will be locked in approximately 24 hours, please choose your team, 
     https://premier-league-predictions-2.onrender.com/
     Best regards
     The Premier League Predictions team."""
-                    send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Reminder", body)
+                    send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Premier Leauge Predictions Reminder", body)
 
     return "I'm alive!", 200
 
@@ -1014,7 +1014,7 @@ def send_reset_emailIOS():
         reset_url = url_for('reset_password', token=token, _external=True)
         
         # Send email (example using smtplib)
-        send_email('matthewpricewilliams@gmail.com', "avdc pvom qgnj kigx", user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
+        send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
         
         return jsonify({"msg": "Password reset email sent."}), 200
     else:
