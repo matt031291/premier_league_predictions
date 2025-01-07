@@ -101,21 +101,11 @@ def get_gameweek_teams(round):
 
 def get_result_points_home(result_str):
     home,away = result_str.split(':')
-    if int(home)==int(away):
-        return 1
-    elif int(home)>int(away):
-        return 3
-    elif int(home)< int(away):
-        return 0
+    return int(home)- int(away)
 
 def get_result_points_away(result_str):
     home,away = result_str.split(':')
-    if int(home)==int(away):
-        return 1
-    elif int(home)<int(away):
-        return 3
-    elif int(home)> int(away):
-        return 0
+    return int(away) - int(home)
 
 
 

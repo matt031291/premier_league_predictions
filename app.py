@@ -254,7 +254,13 @@ def update_scores():
                 score_for_round = None 
 
                 if match in winner_scores:
-                    score_for_round = winner_scores[user.locked_team_choice]
+                    GD = winner_scores[user.locked_team_choice]
+                    if GD>0:
+                        score_for_round = 3
+                    elif GD<0:
+                        score_for_round = 0
+                    else:
+                        score_for_round = 1
                 if match[0:3] == 'Lei':  
                     score_for_round += 0.1 
                 if score_for_round is not None:
@@ -266,11 +272,21 @@ def update_scores():
         ###Add current round
         score_for_round = None 
         if user.locked_team_choice in winner_scores:
-            score_for_round = winner_scores[user.locked_team_choice]
+            GD = winner_scores[user.locked_team_choice]
+            if GD>0:
+                score_for_round = 3
+            elif GD<0:
+                score_for_round = 0
+            else:
+                score_for_round = 1
             if user.doubleup and user.doubleupsleft > 0.5:
-                score_for_round += winner_scores[user.locked_team_choice]
+                score_for_round = 2*score_for_round
                 user.doubleupsleft -= 1          
                 user.doubleup = False  
+            if user.GD_bonus and user.GD_bonus_left > 0.5:
+                score_for_round += GD
+                user.GD_bonus_left -= 1
+                user.GD_bonus = False
         if user.locked_team_choice is not None:
             if user.locked_team_choice[0:3] == 'Lei':
                 score_for_round += 0.1
@@ -382,9 +398,9 @@ def keep_alive():
     email_time = start_time - pd.Timedelta(minutes=60*24)
     now = datetime.now()
 
-    if now > end_time:
-        update_scores()
-        generate_teams_auto()
+    #if now > end_time:
+    #    update_scores()
+    #    generate_teams_auto()
 
 
     if now > start_time:
