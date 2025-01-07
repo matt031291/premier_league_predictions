@@ -208,6 +208,8 @@ def get_round_scores(round):
     soup = BeautifulSoup(response.text, 'html.parser')
 
     data = fetch_data_scores(soup, round)
+    if len(data) == 0:
+        return []
     data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
     data['home'] = data['home1'] + '_' + data['away1'] +'_H'
     data['away'] = data['away1'] + '_' + data['home1'] +'_A'
