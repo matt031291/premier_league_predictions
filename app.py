@@ -372,16 +372,20 @@ def signup():
 
 @app.route('/keep-alive')
 def keep_alive():
-
-
     
     gameweek_teams = GameWeekTeams.query.first()  # Retrieve the first record
     if not gameweek_teams:
         return "I'm alive!", 200
 
     start_time = gameweek_teams.start_time
+    end_time = gameweek_teams.end_time
     email_time = start_time - pd.Timedelta(minutes=60*24)
     now = datetime.now()
+
+    if now > end_time:
+        update_scores()
+        generate_teams_auto()
+
 
     if now > start_time:
         lock_team_choices()  # Call the lock function if the condition is met
@@ -508,6 +512,21 @@ def register():
 
     return render_template('register.html')
 
+def generate_teams_auto():
+    current_user = User.query.filter_by(username='admin').first()
+    if current_user.previous_results is None:
+        round = None
+    else:
+        round = len(json.loads(current_user.previous_results)) +len(json.loads(current_user.delayed_matches)) 
+
+    # Example function call to generate new game week teams
+    new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
+    update_gameweek_teams(new_teams, start_gameweek, end_gameweek)
+    # Update all users with new teams (example logic)
+    users = User.query.all()
+    for user in users:
+        user.team_choice = None  # Reset team choice
+        db.session.commit()
     
 @app.route('/generate_teams', methods=['POST'])
 @login_required
@@ -526,7 +545,6 @@ def generate_teams():
         users = User.query.all()
         for user in users:
             user.team_choice = None  # Reset team choice
-            #user.gold = 100  # Reset gold (example logic)
             db.session.commit()
 
         flash('New teams generated successfully.', 'success')
