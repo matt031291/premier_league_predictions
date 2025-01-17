@@ -394,7 +394,7 @@ def keep_alive():
 
     start_time = gameweek_teams.start_time
     end_time = gameweek_teams.end_time
-    email_time = start_time - pd.Timedelta(minutes=60*24)
+    email_time = start_time - pd.Timedelta(minutes=60*23)
     now = datetime.now()
 
     if now > end_time:
@@ -418,11 +418,11 @@ def sent_reminder_email(users):
         print (user.username)
         if user.email is not None:
             if user.team_choice is None:
-                body = "test"#f"""Hello {user.username}, 
-                #Reminder that teams will be locked in approximately 24 hours, please choose your team, 
-                #https://premier-league-predictions-2.onrender.com/
-                #Best regards
-                #The Premier League Predictions team."""
+                body = f"""Hello {user.username}, 
+                Reminder that teams will be locked in approximately 23 hours, please choose your team, 
+                https://premier-league-predictions-2.onrender.com/
+                Best regards
+                The Premier League Predictions team."""
                 send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Premier Leauge Predictions Reminder", body)
                 count += 1
             else:
