@@ -732,7 +732,9 @@ def loginIOS():
             'round': round,
             'teams': teams_new_string,
             'doubleup':user.doubleup,
-            'doubleupsleft':user.doubleupsleft
+            'doubleupsleft':user.doubleupsleft,
+            'gd_bonus':user.GD_bonus,
+            'gd_bonusleft':user.GD_bonus_left
         }), 200
     return jsonify({"msg": "Invalid username or password"}), 401
 
@@ -805,7 +807,9 @@ def choose_teamIOS():
         'round': round,
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
-        'doubleupsleft':user.doubleupsleft
+        'doubleupsleft':user.doubleupsleft,
+        'gd_bonus':user.GD_bonus,
+        'gd_bonusleft':user.GD_bonus_left
     }), 200
 
 
@@ -859,7 +863,9 @@ def gd_bonusIOS():
         'round': round,
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
-        'doubleupsleft':user.doubleupsleft
+        'doubleupsleft':user.doubleupsleft,
+        'gd_bonus':user.GD_bonus,
+        'gd_bonusleft':user.GD_bonus_left
     }), 200
 
 
@@ -914,7 +920,9 @@ def doubleupOS():
         'round': round,
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
-        'doubleupsleft':user.doubleupsleft
+        'doubleupsleft':user.doubleupsleft,
+        'gd_bonus':user.GD_bonus,
+        'gd_bonusleft':user.GD_bonus_left
     }), 200
 
 
