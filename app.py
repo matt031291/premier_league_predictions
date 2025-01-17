@@ -243,6 +243,15 @@ def lock_team_choices():
     teams = {}
     update_gameweek_teams(teams, new_time,None)
 
+def points_from_GD(GD):
+    if GD>0:
+        score_for_round = 3
+    elif GD<0:
+        score_for_round = 0
+    else:
+        score_for_round = 1
+    return score_for_round
+
 # Function to update scores and reset team choices
 def update_scores():
     winner_scores = get_results()
@@ -255,14 +264,9 @@ def update_scores():
 
                 if match in winner_scores:
                     GD = winner_scores[user.locked_team_choice]
-                    if GD>0:
-                        score_for_round = 3
-                    elif GD<0:
-                        score_for_round = 0
-                    else:
-                        score_for_round = 1
-                if match[0:3] == 'Lei':  
-                    score_for_round += 0.1 
+                    score_for_round = points_from_GD(GD)
+                    if match[0:3] == 'Lei':  
+                        score_for_round += 0.1 
                 if score_for_round is not None:
                     user.score += score_for_round
                     user.score = format(user.score, '.1f')
@@ -273,14 +277,9 @@ def update_scores():
         score_for_round = None 
         if user.locked_team_choice in winner_scores:
             GD = winner_scores[user.locked_team_choice]
-            if GD>0:
-                score_for_round = 3
-            elif GD<0:
-                score_for_round = 0
-            else:
-                score_for_round = 1
+            score_for_round = points_from_GD(GD)
             if user.doubleup and user.doubleupsleft > 0.5:
-                score_for_round = 2*score_for_round
+                score_for_round +=points_from_GD(GD)
                 user.doubleupsleft -= 1          
                 user.doubleup = False  
             if user.GD_bonus and user.GD_bonus_left > 0.5:
@@ -398,9 +397,9 @@ def keep_alive():
     email_time = start_time - pd.Timedelta(minutes=60*24)
     now = datetime.now()
 
-    #if now > end_time:
-    #    update_scores()
-    #    generate_teams_auto()
+    if now > end_time:
+        update_scores()
+        generate_teams_auto()
 
 
     if now > start_time:
@@ -408,17 +407,32 @@ def keep_alive():
         
     if 0 < (email_time - now).total_seconds() < 305:
         users = User.query.all()
-        for user in users:
-            if user.email is not None:
-                if user.team_choice is not None:
-                    body = f"""Hello {user.username}, 
-    Reminder that teams will be locked in approximately 24 hours, please choose your team, 
-    https://premier-league-predictions-2.onrender.com/
-    Best regards
-    The Premier League Predictions team."""
-                    send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Premier Leauge Predictions Reminder", body)
+        count = sent_reminder_email(users)
+        return f"{count} Emails sent!", 200
 
     return "I'm alive!", 200
+
+def sent_reminder_email(users):
+    count = 0
+    for user in users:
+        print (user.username)
+        if user.email is not None:
+            if user.team_choice is None:
+                body = "test"#f"""Hello {user.username}, 
+                #Reminder that teams will be locked in approximately 24 hours, please choose your team, 
+                #https://premier-league-predictions-2.onrender.com/
+                #Best regards
+                #The Premier League Predictions team."""
+                send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Premier Leauge Predictions Reminder", body)
+                count += 1
+            else:
+                continue
+        else:
+            continue
+    return count
+        
+
+
 
 
 @app.route('/logout')
