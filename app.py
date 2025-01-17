@@ -91,7 +91,7 @@ class User(UserMixin, db.Model):
     doubleupsleft = db.Column(db.Integer, default = 2)
     rank = db.Column(db.Integer, default = 1)
     GD_bonus = db.Column(db.Boolean, default=False)
-    GD_bonus_left = db.Column(db.Integer, default = 2)
+    GD_bonus_left = db.Column(db.Integer, default = 1)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -808,6 +808,59 @@ def choose_teamIOS():
         'doubleupsleft':user.doubleupsleft
     }), 200
 
+
+@app.route('/gd_bonusIOS', methods=['POST'])
+def gd_bonusIOS():
+    data = request.json
+    username = data.get('username')
+    gd_bonus = data.get('gd_bonus')
+    admin = User.query.filter_by(username="admin").first()
+
+    user = User.query.filter_by(username=username).first()
+
+    user.GD_bonus = gd_bonus
+    db.session.commit()
+        # Get game week teams
+    teams = read_current_gameweek_teams()
+    teams_new_string = {}
+    if user.doubleup:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = 2*value
+    else:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = value
+    if admin.previous_results is None:
+        round = 1
+    else:
+        if user.delayed_matches is not None:
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
+        else:
+            round = len(json.loads(admin.previous_results)) +1 
+    
+    if user.team_choice is None:
+        team_choice = ""
+    else:
+        team_choice = transform_match_string(user.team_choice)
+    if user.locked_team_choice is None:
+        locked_team_choice = ""
+    else:
+        locked_team_choice = transform_match_string(user.locked_team_choice)
+
+    if locked_team_choice != "":
+        presented_team_choice = locked_team_choice
+    else:
+        presented_team_choice = team_choice
+    return jsonify({
+        'access_token': "",
+        'username': user.username,
+        'score': user.score,
+        'gold': user.gold,
+        'team_choice': presented_team_choice,
+        'round': round,
+        'teams': teams_new_string, 
+        'doubleup':user.doubleup,
+        'doubleupsleft':user.doubleupsleft
+    }), 200
 
 
 
