@@ -8,7 +8,7 @@ import math
 import re
 import json
 import os
-from scraper import get_gameweek_teams, get_results, get_round_scores
+from scraper import get_gameweek_teams, get_results, get_round_scores, get_next_start_time
 from datetime import datetime,timedelta
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -72,6 +72,7 @@ class GameWeekTeams(db.Model):
     start_time = db.Column(db.TIMESTAMP)
     end_time = db.Column(db.TIMESTAMP)
     round_results = db.Column(db.Text)
+    next_start_time = db.Column(db.TIMESTAMP)
 
 
 # User model
@@ -178,7 +179,7 @@ def load_user(user_id):
         return Admin.query.get(int(user_id))
 
 # Function to update game week teams in DB
-def update_gameweek_teams(data, start_gameweek, end_gameweek):
+def update_gameweek_teams(data, start_gameweek, end_gameweek, next_start_gameweek):
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams:
         gameweek_teams.data = json.dumps(data)
@@ -187,7 +188,7 @@ def update_gameweek_teams(data, start_gameweek, end_gameweek):
             gameweek_teams.end_time = end_gameweek
     else:
         if end_gameweek is not None:
-            new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek)
+            new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek, next_start_time = next_start_gameweek)
         else:
             new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek)
         db.session.add(new_gameweek_teams)
@@ -551,7 +552,8 @@ def generate_teams_auto():
 
     # Example function call to generate new game week teams
     new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
-    update_gameweek_teams(new_teams, start_gameweek, end_gameweek)
+    next_start_gameweek = get_next_start_time(round)
+    update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
     # Update all users with new teams (example logic)
     users = User.query.all()
     for user in users:
@@ -1074,6 +1076,20 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 
     server.quit()
     return jsonify({"msg": "Password reset email sent."}), 200
+
+@app.route('/fetchNotificationsIOS')
+def fetchNotificationsIOS():
+    gameweek_teams = GameWeekTeams.query.first()
+    start_time = gameweek_teams.start_time
+    if (start_time - timedelta(days=30)) > datetime.now():
+        start_time = None
+    end_time = gameweek_teams.end_time
+    next_start_time = gameweek_teams.next_start_time
+    return jsonify({
+        "start_time":start_time,
+        "end_time":end_time,
+        "next_start_time":next_start_time
+    })
 
 @app.route('/registerLeagueIOS', methods=['POST'])
 def register_leagueIOS():

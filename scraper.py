@@ -66,6 +66,18 @@ def get_teams(match):
     home,away = match.strip(' ').split('-')
     return home,away
 
+def get_next_start_time(round):
+    URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
+    #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
+    response = requests.get(URL)
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    data = fetch_data_fixtures(soup,round+1)
+
+    data['Date'] = data['Date'].apply(process_date)
+    first_game = data['Date'].min() - pd.Timedelta(minutes=90)
+    return first_game
+
 def get_gameweek_teams(round):
     print (1111111)
     URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
