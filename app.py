@@ -399,12 +399,16 @@ def keep_alive():
     now = datetime.now()
 
     if now > end_time:
-        update_scores()
-        generate_teams_auto()
-
+        try:
+            update_scores()
+            generate_teams_auto()
+            return "updated scores",200
+        except: 
+            return "failed updating scores", 200
 
     if now > start_time:
         lock_team_choices()  # Call the lock function if the condition is met
+        return "team choices locked", 200
         
     if 0 < (email_time - now).total_seconds() < 305:
         users = User.query.all()
