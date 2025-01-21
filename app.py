@@ -190,7 +190,7 @@ def update_gameweek_teams(data, start_gameweek, end_gameweek, next_start_gamewee
         if end_gameweek is not None:
             new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek, next_start_time = next_start_gameweek)
         else:
-            new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek)
+            new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek, next_start_time = next_start_gameweek)
         db.session.add(new_gameweek_teams)
     db.session.commit()
 
@@ -556,7 +556,7 @@ def generate_teams_auto():
 
     # Example function call to generate new game week teams
     new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
-    next_start_gameweek = get_next_start_time(round)
+    next_start_gameweek = get_next_start_time(round + 1)
     update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
     # Update all users with new teams (example logic)
     users = User.query.all()

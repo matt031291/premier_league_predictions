@@ -72,7 +72,7 @@ def get_next_start_time(round):
     response = requests.get(URL)
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    data = fetch_data_fixtures(soup,round+1)
+    data = fetch_data_fixtures(soup,round)
 
     data['Date'] = data['Date'].apply(process_date)
     first_game = data['Date'].min() - pd.Timedelta(minutes=90)
