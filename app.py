@@ -242,7 +242,7 @@ def lock_team_choices():
     
 
     teams = {}
-    update_gameweek_teams(teams, new_time,None)
+    update_gameweek_teams(teams, new_time,None, None)
 
 def points_from_GD(GD):
     if GD>0:
@@ -328,7 +328,7 @@ def home(username):
         teams_new_string[transform_match_string(key)] = value
     if teams is None:
         teams = {}
-    return render_template('home.html', username=username, score=user.score, gold=user.gold, team_choice=transform_match_string(user.team_choice),locked_team_choice= transform_match_string(user.locked_team_choice), teams=teams_new_string, round = round, doubleup = user.doubleup, doubleupsleft = user.doubleupsleft)
+    return render_template('home.html', username=username, score=user.score, gold=user.gold, team_choice=transform_match_string(user.team_choice),locked_team_choice= transform_match_string(user.locked_team_choice), teams=teams_new_string, round = round, doubleup = user.doubleup, doubleupsleft = user.doubleupsleft, gdbonus = user.GD_bonus, gdbonusleft = user.GD_bonus_left)
 
 @app.route('/choose_team', methods=['POST'])
 @login_required
@@ -365,6 +365,18 @@ def update_doubleup():
     # Save to the database
     db.session.commit()
     return jsonify({"success": True, "doubleup": current_user.doubleup})
+
+@app.route('/update_gdbonus', methods=['POST'])
+def update_gdbonus():
+    # Retrieve data from the request
+    gdbonus_state = request.json.get('gdbonus')
+    
+    # Assuming current_user is logged in
+    current_user.GD_bonus = gdbonus_state
+    
+    # Save to the database
+    db.session.commit()
+    return jsonify({"success": True, "gdbonus": current_user.GD_bonus})
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():

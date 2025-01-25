@@ -140,6 +140,10 @@
                 <td> <span style="font-weight:bold">Double Jeopardy Selected:</span></td>
                 <td>  {% if doubleup %}Yes, {{ doubleupsleft -1 }} remaining {% else %}No, {{ doubleupsleft }} remaining{% endif %} </td>
             </tr>
+            <tr>
+                <td> <span style="font-weight:bold">GD Bonus Selected:</span></td>
+                <td>  {% if gdbonus %}Yes, {{ gdbonusleft -1 }} remaining {% else %}No, {{ gdbonusleft }} remaining{% endif %} </td>
+            </tr>
         </table>
         </br>
 
@@ -154,7 +158,19 @@
                     {% if teams|length == 0 %}disabled{% endif %}>
                 <span class="slider"></span>
             </label>
-        </div>        
+        </div>
+        <!-- GD Bonus Toggle Section -->
+        <div class="toggle-container">
+            <span class="toggle-label">GD Bonus:</span>
+            <label class="toggle-button">
+                <input 
+                    type="checkbox" 
+                    id="GDBonusToggle" 
+                    {% if gdbonus %}checked{% endif %} 
+                    {% if teams|length == 0 %}disabled{% endif %}>
+                <span class="slider"></span>
+            </label>
+        </div>                
         <h2>Next Matches:</h2>
         <form action="{{ url_for('choose_team') }}" method="POST" class="teams-form">
             <ul class="teams-list">
@@ -220,6 +236,35 @@
                 }
             } catch (error) {
                 console.error('Error updating Double Jeopardy:', error);
+            }
+        });
+    </script>
+
+    <script>
+        const gd_toggle = document.getElementById('GDBonusToggle');
+        const gd_statusText = document.getElementById('status');
+
+        gd_toggle.addEventListener('change', async () => {
+            const isGDBonus = gd_toggle.checked;
+
+            try {
+                // Send the state to the server
+                const response = await fetch('/update_gdbonus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ gdbonus: isGDBonus }),
+                });
+
+                if (response.ok) {
+                    // Reload the page to reflect updated details
+                    window.location.reload();
+                } else {
+                    console.error('Failed to update GD Bonus state');
+                }
+            } catch (error) {
+                console.error('Error updating GD Bonus', error);
             }
         });
     </script>
