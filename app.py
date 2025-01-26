@@ -31,16 +31,9 @@ login_manager.login_view = 'login'
 
 @app.route('/live-fixtures', methods=['GET'])
 def live_fixtures():
-    admin = User.query.filter_by(username='admin').first()
-    if admin.previous_results is None:
-        round = 1
-    else:
-        if admin.delayed_matches is not None:
-            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
-        else:
-            round = len(json.loads(admin.previous_results)) +1 
-    fixtures = get_round_scores(round)
-    return jsonify({"fixtures": fixtures})
+    gameweek_teams = GameWeekTeams.query.first()
+    results = json.load(gameweek_teams.round_results)
+    return jsonify({"fixtures": results})
 
 
 class League(db.Model):
