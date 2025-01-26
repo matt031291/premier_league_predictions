@@ -178,6 +178,18 @@ def load_user(user_id):
     else:
         return Admin.query.get(int(user_id))
 
+
+def add_results_to_gameweek(results):
+    gameweek_teams = GameWeekTeams.query.first()
+
+    if gameweek_teams:
+        # Assuming there's a column named `results_json` to store JSON data
+        gameweek_teams.round_results = json.dumps(results)  # Convert Python dict to JSON string
+        db.session.commit()  # Save changes to the database
+    else:
+        print("No GameWeekTeams entry found.")
+
+
 # Function to update game week teams in DB
 def update_gameweek_teams(data, start_gameweek, end_gameweek, next_start_gameweek):
     gameweek_teams = GameWeekTeams.query.first()
@@ -426,6 +438,17 @@ def keep_alive():
         users = User.query.all()
         count = sent_reminder_email(users)
         return f"{count} Emails sent!", 200
+
+    admin = User.query.filter_by(username='admin').first()
+    if admin.previous_results is None:
+        round = 1
+    else:
+        if admin.delayed_matches is not None:
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
+        else:
+            round = len(json.loads(admin.previous_results)) +1 
+    results = get_round_scores(round)
+    add_results_to_gameweek(results)
 
     return "I'm alive!", 200
 
