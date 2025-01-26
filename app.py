@@ -86,6 +86,7 @@ class User(UserMixin, db.Model):
     rank = db.Column(db.Integer, default = 1)
     GD_bonus = db.Column(db.Boolean, default=False)
     GD_bonus_left = db.Column(db.Integer, default = 1)
+    gd = db.Column(db.Integer,default = 0)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -278,6 +279,7 @@ def update_scores():
                     user.score = format(user.score, '.1f')
                     user.add_previous_result(match, score_for_round)
                     user.remove_delayed_matches(match)
+                    user.gd += GD
 
         ###Add current round
         score_for_round = None 
@@ -297,6 +299,7 @@ def update_scores():
                 score_for_round += 0.1
         if score_for_round is not None:
             user.score += score_for_round
+            user.gd += GD
             user.score = format(user.score, '.1f')
             user.add_previous_result(user.locked_team_choice, score_for_round)
         else:
@@ -767,6 +770,7 @@ def loginIOS():
             'teams': teams_new_string,
             'doubleup':user.doubleup,
             'doubleupsleft':user.doubleupsleft,
+            "goal_difference": user.gd,
             'gd_bonus':user.GD_bonus,
             'gd_bonusleft':user.GD_bonus_left
         }), 200
@@ -842,6 +846,7 @@ def choose_teamIOS():
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
         'doubleupsleft':user.doubleupsleft,
+        "goal_difference": user.gd,
         'gd_bonus':user.GD_bonus,
         'gd_bonusleft':user.GD_bonus_left
     }), 200
@@ -898,6 +903,7 @@ def gd_bonusIOS():
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
         'doubleupsleft':user.doubleupsleft,
+        "goal_difference": user.gd,
         'gd_bonus':user.GD_bonus,
         'gd_bonusleft':user.GD_bonus_left
     }), 200
@@ -955,6 +961,7 @@ def doubleupOS():
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
         'doubleupsleft':user.doubleupsleft,
+        "goal_difference": user.gd,
         'gd_bonus':user.GD_bonus,
         'gd_bonusleft':user.GD_bonus_left
     }), 200
@@ -1032,7 +1039,7 @@ def get_league_details():
             "username": user.username,
             "points": round(user.score,1),
             "gold": user.gold,
-            "goal_difference": 0,
+            "goal_difference": user.gd,
             "locked_team": shortened_team_choice
         })
     print (members)
