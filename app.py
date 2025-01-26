@@ -32,7 +32,7 @@ login_manager.login_view = 'login'
 @app.route('/live-fixtures', methods=['GET'])
 def live_fixtures():
     gameweek_teams = GameWeekTeams.query.first()
-    results = json.load(gameweek_teams.round_results)
+    results = json.loads(gameweek_teams.round_results)
     return jsonify({"fixtures": results})
 
 
