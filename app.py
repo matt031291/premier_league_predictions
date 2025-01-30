@@ -443,8 +443,8 @@ def keep_alive():
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
-    results = get_round_scores(round)
     try:
+        results = get_round_scores(round)
         add_results_to_gameweek(results)
     except AttributeError:
         pass
