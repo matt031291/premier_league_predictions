@@ -423,7 +423,7 @@ def keep_alive():
             update_scores()
             generate_teams_auto()
             return "updated scores",200
-        except: 
+        except AttributeError: 
             return "failed updating scores", 200
 
     if now > start_time:
@@ -444,7 +444,10 @@ def keep_alive():
         else:
             round = len(json.loads(admin.previous_results)) +1 
     results = get_round_scores(round)
-    add_results_to_gameweek(results)
+    try:
+        add_results_to_gameweek(results)
+    except AttributeError:
+        pass
 
     return "I'm alive!", 200
 
