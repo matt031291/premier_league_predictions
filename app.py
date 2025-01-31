@@ -108,14 +108,15 @@ class User(UserMixin, db.Model):
         self.previous_results = json.dumps(previous_results_dict)
         db.session.commit()
 
-    def add_delayed_matches(self, team):
+    def add_delayed_matches(self, team, double_jeopardy, gd_bonus):
         if self.delayed_matches:
             delayed_matches_list = json.loads(self.delayed_matches)
         else:
             delayed_matches_list = []
 
         # Add new result
-        delayed_matches_list+=[team]
+        output = {"team":team,"DJ":double_jeopardy,"GD":gd_bonus}
+        delayed_matches_list+=[output]
 
         # Update and save to database
         self.delayed_matches = json.dumps(delayed_matches_list)
@@ -127,9 +128,11 @@ class User(UserMixin, db.Model):
         else:
             delayed_matches_list = []
 
+
         # Add new result
-        if team in delayed_matches_list:
-            delayed_matches_list = delayed_matches_list.remove(team)
+        for team_dict in delayed_matches_list:
+            if team == team_dict['team']:
+                delayed_matches_list = delayed_matches_list.remove(team_dict)
 
         # Update and save to database
         self.delayed_matches= json.dumps(delayed_matches_list)
@@ -266,12 +269,19 @@ def update_scores():
     for user in users:
         ###ADD Previous delayed_matches
         if user.delayed_matches is not None:
-            for match in user.delayed_matches:
+            for match_dict in user.delayed_matches:
+                match = match_dict['team']
+                double_jepordy = match_dict['DJ']
+                gd_bonus = match_dict['GD']
                 score_for_round = None 
 
                 if match in winner_scores:
                     GD = winner_scores[user.locked_team_choice]
                     score_for_round = points_from_GD(GD)
+                    if double_jepordy:
+                        score_for_round +=points_from_GD(GD)
+                    if gd_bonus:
+                        score_for_round += GD
                     if match[0:3] == 'Lei':  
                         score_for_round += 0.1 
                 if score_for_round is not None:
@@ -294,7 +304,6 @@ def update_scores():
                 score_for_round += GD
                 user.GD_bonus_left -= 1
                 user.GD_bonus = False
-        if user.locked_team_choice is not None:
             if user.locked_team_choice[0:3] == 'Lei':
                 score_for_round += 0.1
         if score_for_round is not None:
@@ -303,7 +312,11 @@ def update_scores():
             user.score = format(user.score, '.1f')
             user.add_previous_result(user.locked_team_choice, score_for_round)
         else:
-            user.add_delayed_matches(user.locked_team_choice)
+            if user.doubleup:
+                user.doubleup -= 1
+            if user.GD_bonus:
+                user.GD_bonus -= 1
+            user.add_delayed_matches(user.locked_team_choice, user.doubleup,user.GD_bonus)
         user.team_choice = None
         user.locked_team_choice = None
     db.session.commit()
@@ -415,7 +428,7 @@ def keep_alive():
 
     start_time = gameweek_teams.start_time
     end_time = gameweek_teams.end_time
-    email_time = start_time - pd.Timedelta(minutes=60*23)
+    email_time = start_time - pd.Timedelta(minutes=60*24)
     now = datetime.now()
 
     if now > end_time:
@@ -458,7 +471,7 @@ def sent_reminder_email(users):
         if user.email is not None:
             if user.team_choice is None:
                 body = f"""Hello {user.username}, 
-                Reminder that teams will be locked in approximately 23 hours, please choose your team, 
+                Reminder that teams will be locked in approximately 24 hours, please choose your team, 
                 https://premier-league-predictions-2.onrender.com/
                 Best regards
                 The Premier League Predictions team."""
