@@ -473,9 +473,10 @@ def sent_reminder_email():
                 body = f"""Hello {user.username}, 
                 Reminder that teams will be locked in approximately 23 hours, please choose your team, 
                 https://premier-league-predictions-2.onrender.com/
+                Not sure who to pick? Have a look at our experts Golden Three picks https://goldenpicksdotblog.wordpress.com/
                 Best regards
-                The Premier League Predictions team."""
-                send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Premier Leauge Predictions Reminder", body)
+                The Golden Picks team."""
+                send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Golden Picks Reminder", body)
                 count += 1
             else:
                 continue
