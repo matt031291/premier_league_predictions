@@ -1026,8 +1026,6 @@ def get_league_details():
     if league_name == "Worldwide":
         users = User.query.order_by(User.score.desc(), User.gold.desc()).all()  # Fetch all users
     else:
-        print (league_name)
-        print (type(league_name))
         # Fetch league from the database
         league = League.query.filter_by(name=league_name).first()
         if not league:
@@ -1123,12 +1121,12 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
     server.login(sender_email, sender_password)
 
     # Send the email
-    server.sendmail(sender_email, receiver_email, message.as_string())
+    try:
+        server.sendmail(sender_email, receiver_email, message.as_string())
 
-    print("Email sent successfully!")
-
-
-
+        print("Email sent successfully!")
+    except:
+        print(f"Email to {receiver_email} not sent")
     server.quit()
     return jsonify({"msg": "Password reset email sent."}), 200
 
