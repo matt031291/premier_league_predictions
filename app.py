@@ -1048,6 +1048,10 @@ def get_league_details():
         if team_choice != '':
             transformed_team_choice = transform_match_string(team_choice)
             shortened_team_choice = shorten_match_string(transformed_team_choice)
+            if user.doubleup:
+                shortened_team_choice += '*'
+            if user.GD_bonus:
+                shortened_team_choice += '+'
         else:
             shortened_team_choice = ''
         members.append({
@@ -1057,7 +1061,6 @@ def get_league_details():
             "goal_difference": user.gd,
             "locked_team": shortened_team_choice
         })
-    print (members)
     return jsonify({
         "members": members,
         "total_pages": total_pages
