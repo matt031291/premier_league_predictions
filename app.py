@@ -334,7 +334,7 @@ def index():
 @login_required
 def home(username):
     user = User.query.filter_by(username=username).first()
-    admin = User.query.filter_by(username=username).first()
+    admin = User.query.filter_by(username='admin').first()
     if admin.previous_results is None:
         round = 1
     else:
