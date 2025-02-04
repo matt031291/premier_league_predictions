@@ -269,7 +269,7 @@ def update_scores():
     for user in users:
         ###ADD Previous delayed_matches
         if user.delayed_matches is not None:
-            for match_dict in user.delayed_matches:
+            for match_dict in json.loads(user.delayed_matches):
                 if match_dict is not None:
                     match = match_dict['team']
                     double_jepordy = match_dict['DJ']
