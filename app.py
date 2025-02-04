@@ -270,26 +270,27 @@ def update_scores():
         ###ADD Previous delayed_matches
         if user.delayed_matches is not None:
             for match_dict in user.delayed_matches:
-                match = match_dict['team']
-                double_jepordy = match_dict['DJ']
-                gd_bonus = match_dict['GD']
-                score_for_round = None 
+                if match_dict is not None:
+                    match = match_dict['team']
+                    double_jepordy = match_dict['DJ']
+                    gd_bonus = match_dict['GD']
+                    score_for_round = None 
 
-                if match in winner_scores:
-                    GD = winner_scores[user.locked_team_choice]
-                    score_for_round = points_from_GD(GD)
-                    if double_jepordy:
-                        score_for_round +=points_from_GD(GD)
-                    if gd_bonus:
-                        score_for_round += GD
-                    if match[0:3] == 'Lei':  
-                        score_for_round += 0.1 
-                if score_for_round is not None:
-                    user.score += score_for_round
-                    user.score = format(user.score, '.1f')
-                    user.add_previous_result(match, score_for_round)
-                    user.remove_delayed_matches(match)
-                    user.gd += GD
+                    if match in winner_scores:
+                        GD = winner_scores[user.locked_team_choice]
+                        score_for_round = points_from_GD(GD)
+                        if double_jepordy:
+                            score_for_round +=points_from_GD(GD)
+                        if gd_bonus:
+                            score_for_round += GD
+                        if match[0:3] == 'Lei':  
+                            score_for_round += 0.1 
+                    if score_for_round is not None:
+                        user.score += score_for_round
+                        user.score = format(user.score, '.1f')
+                        user.add_previous_result(match, score_for_round)
+                        user.remove_delayed_matches(match)
+                        user.gd += GD
 
         ###Add current round
         score_for_round = None 
