@@ -737,12 +737,12 @@ def registerIOS():
         flash('Account created successfully! Please log in.', 'success')
         return jsonify({"msg": "User successfully registered, please log in."}), 200
 
+@app.route('/createleagueIOS', methods=['POST'])
 def createleagueIOS():
     data = request.json
     username = data.get('username')
     league_name = data.get('leaguename')
     password = data.get('password')
-    return jsonify({"msg": "League name already used. \n Please choose a different one."}), 401
     current_user = User.query.filter_by(username=username).first()
 
     # Check if the username already exists
