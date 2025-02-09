@@ -754,10 +754,15 @@ def createleagueIOS():
     else:
         new_league = League(name=league_name)
         new_league.set_password(password)
-        current_user.add_league_id(new_league.id)
         new_league.add_user_id(current_user.id)
         db.session.add(new_league)
         db.session.commit()
+        new_league = League.query.filter_by(name=league_name).first()
+        current_user.add_league_id(new_league.id)
+        db.session.commit()
+
+
+
 
         flash('Account created successfully! Please log in.', 'success')
         return jsonify({"msg": "League successfully created."}), 200
