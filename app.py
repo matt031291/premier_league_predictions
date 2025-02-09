@@ -724,7 +724,7 @@ def registerIOS():
 
     # Check if the username already exists
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({"msg": "Username or password already exists.//Please choose a different one."}), 401
+        return jsonify({"msg": "Username or email already used. \n Please choose a different one."}), 401
 
 
     # Create a new user
@@ -736,6 +736,30 @@ def registerIOS():
 
         flash('Account created successfully! Please log in.', 'success')
         return jsonify({"msg": "User successfully registered, please log in."}), 200
+
+def createleagueIOS():
+    data = request.json
+    username = data.get('username')
+    league_name = data.get('leaguename')
+    password = data.get('password')
+    current_user = User.query.filter_by(username=username).first()
+
+    # Check if the username already exists
+    if League.query.filter_by(name = league_name).first():
+        return jsonify({"msg": "League name already used. \n Please choose a different one."}), 401
+
+
+    # Create a new user
+    else:
+        new_league = League(name=league_name)
+        new_league.set_password(password)
+        current_user.add_league_id(new_league.id)
+        new_league.add_user_id(current_user.id)
+        db.session.add(new_league)
+        db.session.commit()
+
+        flash('Account created successfully! Please log in.', 'success')
+        return jsonify({"msg": "League successfully created."}), 200
 
 
 @app.route('/loginIOS', methods=['POST'])
@@ -1163,7 +1187,6 @@ def register_leagueIOS():
         current_user = User.query.filter_by(username=username).first()
         if not league_name or not league_password:
             return jsonify({"message": "League name and password are required"}), 400
-
         # Query for the league by name
         league = League.query.filter_by(name=league_name).first()
 
