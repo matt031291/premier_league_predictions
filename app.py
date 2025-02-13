@@ -808,6 +808,12 @@ def loginIOS():
             presented_team_choice = locked_team_choice
         else:
             presented_team_choice = team_choice
+        gameweek_teams = GameWeekTeams.query.first()  # Retrieve the first record
+        if not gameweek_teams:
+            deadline = ""
+
+        else:
+            deadline = str(gameweek_teams.start_time)
         return jsonify({
             'access_token': token,
             'username': user.username,
@@ -820,7 +826,8 @@ def loginIOS():
             'doubleupsleft':user.doubleupsleft,
             "goal_difference": user.gd,
             'gd_bonus':user.GD_bonus,
-            'gd_bonusleft':user.GD_bonus_left
+            'gd_bonusleft':user.GD_bonus_left,
+            'deadline':deadline
         }), 200
     return jsonify({"msg": "Invalid username or password"}), 401
 
