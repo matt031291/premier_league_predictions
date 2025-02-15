@@ -1060,6 +1060,10 @@ def get_previous_picksIOS():
     user = User.query.filter_by(username=username).first()
 
     previous_results_dict = json.loads(user.previous_results or '{}')
+    new_results_dict = {}
+    for round, round_dict in previous_results_dict.items():
+        new_results_dict[round] = {'team':transform_match_string(round_dict['team']),'score':round_dict['score']}
+
     return jsonify(previous_results_dict)
 
 
