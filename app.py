@@ -1064,7 +1064,7 @@ def get_previous_picksIOS():
     for round, round_dict in previous_results_dict.items():
         new_results_dict[round] = {'team':transform_match_string(round_dict['team']),'score':round_dict['score']}
 
-    return jsonify(previous_results_dict)
+    return jsonify(new_results_dict)
 
 
 @app.route('/get_league_detailsIOS', methods=['POST'])
