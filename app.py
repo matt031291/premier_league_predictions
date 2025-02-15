@@ -715,7 +715,6 @@ def create_league():
 
 
 @app.route('/registerIOS', methods=['POST'])
-
 def registerIOS():
     data = request.json
     username = data.get('username')
@@ -907,6 +906,8 @@ def choose_teamIOS():
     }), 200
 
 
+
+
 @app.route('/gd_bonusIOS', methods=['POST'])
 def gd_bonusIOS():
     data = request.json
@@ -1052,6 +1053,14 @@ def get_leaguesIOS():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/get_previous_picksIOS', methods = ['POST'])
+def get_previous_picksIOS():
+    data = request.json
+    username = data.get("user")
+    user = User.query.filter_by(username=username).first()
+
+    previous_results_dict = json.loads(user.previous_results or '{}')
+    return jsonify(previous_results_dict)
 
 
 @app.route('/get_league_detailsIOS', methods=['POST'])
