@@ -277,7 +277,7 @@ def update_scores():
                     score_for_round = None 
 
                     if match in winner_scores:
-                        GD = winner_scores[user.locked_team_choice]
+                        GD = winner_scores[match]
                         score_for_round = points_from_GD(GD)
                         if double_jepordy:
                             score_for_round +=points_from_GD(GD)
