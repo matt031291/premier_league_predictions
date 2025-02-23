@@ -268,7 +268,7 @@ def update_scores():
     users = User.query.all()
     for user in users:
         ###ADD Previous delayed_matches
-        if user.delayed_matches is not None:
+        if json.loads(user.delayed_matches) is not None:
             for match_dict in json.loads(user.delayed_matches):
                 if match_dict is not None:
                     match = match_dict['team']
