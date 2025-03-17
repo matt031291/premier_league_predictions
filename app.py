@@ -116,7 +116,10 @@ class User(UserMixin, db.Model):
 
         # Add new result
         output = {"team":team,"DJ":double_jeopardy,"GD":gd_bonus}
-        delayed_matches_list+=[output]
+        if delayed_matches_list is None:
+            delayed_matches_list = [output]
+        else:
+            delayed_matches_list+=[output]
 
         # Update and save to database
         self.delayed_matches = json.dumps(delayed_matches_list)
@@ -203,7 +206,7 @@ def update_gameweek_teams(data, start_gameweek, end_gameweek, next_start_gamewee
         db.session.add(new_gameweek_teams)
     db.session.commit()
 
-# Function to read current game week teams from DB
+# Function to read current game week teams from D
 def read_current_gameweek_teams():
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams:
@@ -309,6 +312,8 @@ def update_scores():
                 user.GD_bonus = False
             if user.locked_team_choice[0:3] == 'Lei':
                 score_for_round += 0.1
+        elif user.locked_team_choice is None:
+            score_for_round = 0
         if score_for_round is not None:
             user.score += score_for_round
             user.gd += GD
@@ -627,7 +632,7 @@ def generate_teams():
         print (round)
         # Example function call to generate new game week teams
         new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
-        update_gameweek_teams(new_teams, start_gameweek, end_gameweek)
+        update_gameweek_teams(new_teams, start_gameweek, end_gameweek, None)
         # Update all users with new teams (example logic)
         users = User.query.all()
         for user in users:
