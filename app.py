@@ -609,6 +609,8 @@ def generate_teams_auto():
     current_user = User.query.filter_by(username='admin').first()
     if current_user.previous_results is None:
         round = None
+    elif current_user.delayed_matches is None:
+        round = len(json.loads(current_user.previous_results)) + 1
     else:
         round = len(json.loads(current_user.previous_results)) +len(json.loads(current_user.delayed_matches)) 
 
