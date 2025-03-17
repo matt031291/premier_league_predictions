@@ -314,7 +314,7 @@ def update_scores():
                 score_for_round += 0.1
         elif user.locked_team_choice is None:
             score_for_round = 0
-            
+
             GD = 0
         if score_for_round is not None:
             user.score += score_for_round
@@ -348,7 +348,7 @@ def home(username):
     if admin.previous_results is None:
         round = 1
     else:
-        if user.delayed_matches is not None:
+        if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
@@ -795,7 +795,7 @@ def loginIOS():
     if admin.previous_results is None:
         round = 1
     else:
-        if user.delayed_matches is not None:
+        if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
@@ -881,7 +881,7 @@ def choose_teamIOS():
     if admin.previous_results is None:
         round = 1
     else:
-        if user.delayed_matches is not None:
+        if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
@@ -940,7 +940,7 @@ def gd_bonusIOS():
     if admin.previous_results is None:
         round = 1
     else:
-        if user.delayed_matches is not None:
+        if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
@@ -998,7 +998,7 @@ def doubleupOS():
     if admin.previous_results is None:
         round = 1
     else:
-        if user.delayed_matches is not None:
+        if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
             round = len(json.loads(admin.previous_results)) +1 
