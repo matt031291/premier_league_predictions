@@ -314,6 +314,7 @@ def update_scores():
                 score_for_round += 0.1
         elif user.locked_team_choice is None:
             score_for_round = 0
+            GD = 0
         if score_for_round is not None:
             user.score += score_for_round
             user.gd += GD
