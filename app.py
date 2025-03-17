@@ -630,6 +630,8 @@ def generate_teams():
     if current_user.username == 'admin':
         if current_user.previous_results is None:
             round = None
+        elif current_user.delayed_matches is None:
+            round = len(json.loads(current_user.previous_results)) + 1
         else:
             round = len(json.loads(current_user.previous_results)) +len(json.loads(current_user.delayed_matches)) 
 
