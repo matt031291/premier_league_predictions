@@ -391,7 +391,8 @@ def update_doubleup():
     doubleup_state = request.json.get('doubleup')
     
     # Assuming current_user is logged in
-    current_user.doubleup = doubleup_state
+    if current_user.doubleup >0:
+        current_user.doubleup = doubleup_state
     
     # Save to the database
     db.session.commit()
@@ -403,7 +404,8 @@ def update_gdbonus():
     gdbonus_state = request.json.get('gdbonus')
     
     # Assuming current_user is logged in
-    current_user.GD_bonus = gdbonus_state
+    if current_user.GD_bonus > 0:
+        current_user.GD_bonus = gdbonus_state
     
     # Save to the database
     db.session.commit()
@@ -930,7 +932,8 @@ def gd_bonusIOS():
 
     user = User.query.filter_by(username=username).first()
 
-    user.GD_bonus = gd_bonus
+    if user.GD_bonus_left > 0:
+        user.GD_bonus = gd_bonus
     db.session.commit()
         # Get game week teams
     teams = read_current_gameweek_teams()
@@ -987,8 +990,8 @@ def doubleupOS():
     admin = User.query.filter_by(username="admin").first()
 
     user = User.query.filter_by(username=username).first()
-
-    user.doubleup = doubleup
+    if user.doubleupsleft > 0:
+        user.doubleup = doubleup
     db.session.commit()
         # Get game week teams
     teams = read_current_gameweek_teams()
