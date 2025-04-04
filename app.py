@@ -95,10 +95,10 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def add_previous_result(self, team, score):
-        if self.previous_results:
-            previous_results_dict = json.loads(self.previous_results)
-        else:
-            previous_results_dict = {}
+        #if self.previous_results:
+        #previous_results_dict = json.loads(self.previous_results)
+        #else:
+        previous_results_dict = {}
 
         # Add new result
         round_number = len(previous_results_dict) + 1
