@@ -95,10 +95,10 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def add_previous_result(self, team, score):
-        #if self.previous_results:
-        #previous_results_dict = json.loads(self.previous_results)
-        #else:
-        previous_results_dict = {}
+        if self.previous_results:
+            previous_results_dict = json.loads(self.previous_results)
+        else:
+            previous_results_dict = {}
 
         # Add new result
         round_number = len(previous_results_dict) + 1
@@ -804,7 +804,7 @@ def loginIOS():
         if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) +1 
+            round = len(json.loads(admin.previous_results)) +31 
 
 
             
@@ -890,7 +890,7 @@ def choose_teamIOS():
         if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) +1 
+            round = len(json.loads(admin.previous_results)) +31 
     
     if user.team_choice is None:
         team_choice = ""
@@ -950,7 +950,7 @@ def gd_bonusIOS():
         if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) +1 
+            round = len(json.loads(admin.previous_results)) +31 
     
     if user.team_choice is None:
         team_choice = ""
@@ -1008,7 +1008,7 @@ def doubleupOS():
         if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) +1 
+            round = len(json.loads(admin.previous_results)) +31 
     
     if user.team_choice is None:
         team_choice = ""
