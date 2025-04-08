@@ -312,10 +312,12 @@ def update_scores():
                 user.GD_bonus = False
             if user.locked_team_choice[0:3] == 'Lei':
                 score_for_round += 0.1
-        elif user.locked_team_choice is None:
+        elif user.locked_team_choice is '':
             score_for_round = 0
 
             GD = 0
+        else:
+            score_for_round = None
         if score_for_round is not None:
             user.score += score_for_round
             user.gd += GD
