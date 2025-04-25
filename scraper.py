@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-from datetime import datetime
+import dateparser
 TEAM_MAPS = {"Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"Wol","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
 
 def fetch_data_fixtures(soup, round ):
@@ -43,24 +43,17 @@ def fetch_data_fixtures(soup, round ):
 
 # Function to handle both cases
 def process_date(date_str):
-    current_year = datetime.now().year
-
-    date_str = date_str.strip()
+    dt = dateparser.parse(
+        date_str,
+        settings={
+            'DATE_ORDER': 'DMY',
+            'PREFER_DATES_FROM': 'future',
+        }
+    )
+    if dt is None:
+        raise ValueError(f"Could not parse date string: {date_str}")
     
-    if date_str == '':
-        return None  # Return None for empty strings
-    
-    try:
-        # Check if the date includes a year
-        if len(date_str.split()[-1]) == 4 and date_str.split()[-1].isdigit():
-            # Full date with year provided
-            return pd.to_datetime(date_str, format='%d.%m.%Y %H:%M', errors='coerce')
-        else:
-            # No year, append the current year
-            return pd.to_datetime(f"{date_str} {current_year}", format='%d.%m. %H:%M %Y', errors='coerce')
-    except ValueError:
-        return None  # Handle parsing errors gracefully
-    
+    return pd.Timestamp(dt)
 
 def get_teams(match):
     home,away = match.strip(' ').split('-')
