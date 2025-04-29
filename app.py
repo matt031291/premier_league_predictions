@@ -4,6 +4,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_jwt_extended import JWTManager, create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 import numpy as np
+import dateparser
 import math
 import re
 import json
@@ -323,7 +324,7 @@ def update_scores():
             user.gd += GD
             user.score = format(user.score, '.1f')
             user.add_previous_result(user.locked_team_choice, score_for_round)
-        else:
+        elif user.locked_team_choice is not None:
             if user.doubleup:
                 user.doubleup -= 1
             if user.GD_bonus:
