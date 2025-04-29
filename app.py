@@ -230,21 +230,27 @@ def lock_team_choices():
         if user.team_choice is not None:
             for key, value in teams.items():
                 if key == user.team_choice:
-                    user.gold -= value
-                    user.locked_team_choice = key
-                    if user.doubleup:
-                        if user.gold >= value:
-                            user.gold -= value
-                        else:
-                            user.doubleup = False
+                    if user.gold >= value:
+                        user.gold -= value
+                        user.locked_team_choice = key
+                        if user.doubleup:
+                            if user.gold >= value:
+                                user.gold -= value
+                            else:
+                                user.doubleup = False
+
+
+                    else:
+                        user.locked_team_choice = None
                     break
         else:
-            random_value = np.random.randint(1,5)
-            for key, value in teams.items():
-                if value == random_value:
-                    user.gold -= 10
-                    user.locked_team_choice = key
-                    break
+            user.locked_team_choice = None
+            #random_value = np.random.randint(1,5)
+            #for key, value in teams.items():
+            #    if value == random_value:
+            #        user.gold -= 10
+            #        user.locked_team_choice = key
+            #        break
         ## Option to add strategies
         user.team_choice = None
     
