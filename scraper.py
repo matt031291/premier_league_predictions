@@ -51,8 +51,7 @@ def process_date(date_str):
         }
     )
     if dt is None:
-        raise ValueError(f"Could not parse date string: {date_str}")
-    
+        return None    
     return pd.Timestamp(dt)
 
 def get_teams(match):
@@ -74,7 +73,7 @@ def get_next_start_time(round):
 
 def get_gameweek_teams(round):
     print (1111111)
-    round = round +29
+    round = round +30
     URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
