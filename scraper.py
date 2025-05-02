@@ -73,7 +73,7 @@ def get_next_start_time(round):
 
 def get_gameweek_teams(round):
     print (1111111)
-    round = round +30
+    round = round +29
     URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
