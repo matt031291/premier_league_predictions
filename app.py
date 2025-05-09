@@ -252,7 +252,7 @@ def lock_team_choices():
             #        user.locked_team_choice = key
             #        break
         ## Option to add strategies
-        user.team_choice = None
+        user.team_choice = ''
     
     # Calculate the new time
     new_time = datetime.now() + timedelta(days=100)
