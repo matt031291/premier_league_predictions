@@ -244,7 +244,7 @@ def lock_team_choices():
                         user.locked_team_choice = None
                     break
         else:
-            user.locked_team_choice = None
+            user.locked_team_choice = ''
             #random_value = np.random.randint(1,5)
             #for key, value in teams.items():
             #    if value == random_value:
@@ -252,7 +252,7 @@ def lock_team_choices():
             #        user.locked_team_choice = key
             #        break
         ## Option to add strategies
-        user.team_choice = ''
+        user.team_choice = None
     
     # Calculate the new time
     new_time = datetime.now() + timedelta(days=100)
