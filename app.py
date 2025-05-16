@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS  # ✅ Import this
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_jwt_extended import JWTManager, create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -23,6 +24,8 @@ REVERSE_TEAM_MAPS = {value:key for key,value in TEAM_MAPS.items()}
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
+CORS(app)  # or CORS(app, origins=["http://localhost:8000"])
+
 jwt = JWTManager(app)
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
@@ -1330,6 +1333,14 @@ def generate_reset_token(user):
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm="HS256")
     return token
 
+app = Flask(__name__)
+app.config.from_object('config.Config')
+jwt = JWTManager(app)
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
 if __name__ == '__main__':
     #create_database()
     port = int(os.environ.get("PORT", 5000))
