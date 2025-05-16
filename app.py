@@ -400,7 +400,7 @@ def update_doubleup():
     doubleup_state = request.json.get('doubleup')
     
     # Assuming current_user is logged in
-    if current_user.doubleup >0:
+    if current_user.doubleupsleft >0:
         current_user.doubleup = doubleup_state
     
     # Save to the database
@@ -413,7 +413,7 @@ def update_gdbonus():
     gdbonus_state = request.json.get('gdbonus')
     
     # Assuming current_user is logged in
-    if current_user.GD_bonus > 0:
+    if current_user.GD_bonus_left > 0:
         current_user.GD_bonus = gdbonus_state
     
     # Save to the database
