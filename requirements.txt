@@ -13,4 +13,3 @@ SQLAlchemy==1.4.23
 regex==2024.11.6
 dateparser==1.2.1
 tzlocal==5.3.1
-flask-cors==3.0.10
