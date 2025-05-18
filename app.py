@@ -127,6 +127,7 @@ class User(UserMixin, db.Model):
         db.session.commit()
 
     def remove_delayed_matches(self, team):
+        a=1
         if self.delayed_matches:
             delayed_matches_list = json.loads(self.delayed_matches)
         else:
