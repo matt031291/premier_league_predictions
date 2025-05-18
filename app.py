@@ -24,6 +24,8 @@ REVERSE_TEAM_MAPS = {value:key for key,value in TEAM_MAPS.items()}
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 jwt = JWTManager(app)
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
