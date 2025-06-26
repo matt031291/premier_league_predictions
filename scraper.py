@@ -12,7 +12,7 @@ def fetch_data_fixtures(soup, round ):
     keep_searching = False
     start_searching = False
     if round is None:
-        round = 13 #This needs to be changed for testing to most recent round
+        round = 1 #This needs to be changed for testing to most recent round
     for row in rows:
         if 'Round' in row.text and str(round)+'.' in row.text:
             start_searching = True
@@ -59,7 +59,7 @@ def get_teams(match):
     return home,away
 
 def get_next_start_time(round):
-    round = round + 29
+    round = round
     URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
@@ -73,7 +73,7 @@ def get_next_start_time(round):
 
 def get_gameweek_teams(round):
     print (1111111)
-    round = round +29
+    round = round
     URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
@@ -202,7 +202,7 @@ def get_round_scores(round):
     URL = "https://www.betexplorer.com/football/england/premier-league/results/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
-    round = round + 29
+    round = round
     data = fetch_data_scores(soup, round)
     if len(data) == 0:
         return []
