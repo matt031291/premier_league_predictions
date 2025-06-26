@@ -79,7 +79,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True)
     password_hash = db.Column(db.String(150), nullable=False)
     score = db.Column(db.Float, default=0.0)
-    gold = db.Column(db.Integer, default=380)
+    gold = db.Column(db.Integer, default=400)
     team_choice = db.Column(db.String(50))  # Nullable by default, starts as None
     locked_team_choice = db.Column(db.String(50))
     previous_results = db.Column(db.Text)  # JSON string to store previous results
