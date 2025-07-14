@@ -1081,6 +1081,42 @@ def get_leaguesIOS():
         # Handle unexpected errors
         return jsonify({"error": str(e)}), 500
 
+@app.route('/unregisterIOS', methods=['POST'])
+def unregisterIOS():
+    try:
+        data = request.json
+        username = data.get("user")
+
+        if not username:
+            return jsonify({"message": "Username is required"}), 400
+
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+
+        # Get the list of league IDs this user belongs to
+        league_ids = json.loads(user.league_ids) if user.league_ids else []
+
+        for league_id in league_ids:
+            league = League.query.get(league_id)
+            if league:
+                user_ids = json.loads(league.user_ids) if league.user_ids else []
+                if user.id in user_ids:
+                    user_ids.remove(user.id)
+                    league.user_ids = json.dumps(user_ids)
+                    db.session.add(league)  # mark league for update
+
+        # Delete the user
+        db.session.delete(user)
+        db.session.commit()
+
+        return jsonify({"message": f"User '{username}' successfully unregistered and deleted."}), 200
+
+    except Exception as e:
+        app.logger.error(f"Error in unregisterIOS: {e}")
+        return jsonify({"message": "An internal error occurred"}), 500
+
+    
 
 @app.route('/get_previous_picksIOS', methods = ['POST'])
 def get_previous_picksIOS():
