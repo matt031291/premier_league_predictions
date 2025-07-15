@@ -1317,6 +1317,35 @@ def send_reset_emailIOS():
     else:
         return jsonify({"msg": "Email not found."}), 404
 
+@app.route('/deregister', methods=['GET', 'POST'])
+def deregister_web():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(username=username).first()
+        if not user or not user.check_password(password):
+            return render_template('deregister.html', error="Invalid username or password")
+
+        # Perform the same logic as in unregisterIOS
+        league_ids = json.loads(user.league_ids) if user.league_ids else []
+
+        for league_id in league_ids:
+            league = League.query.get(league_id)
+            if league:
+                user_ids = json.loads(league.user_ids) if league.user_ids else []
+                if user.id in user_ids:
+                    user_ids.remove(user.id)
+                    league.user_ids = json.dumps(user_ids)
+                    db.session.add(league)
+
+        db.session.delete(user)
+        db.session.commit()
+        return render_template('deregister.html', success="Account successfully deregistered.")
+
+    return render_template('deregister.html')
+
+
 @app.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
