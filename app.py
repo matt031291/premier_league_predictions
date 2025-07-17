@@ -39,7 +39,24 @@ def live_fixtures():
     results = json.loads(gameweek_teams.round_results)
     return jsonify({"fixtures": results})
 
+class GameweekStats(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    gameweek = db.Column(db.Integer, nullable=False)
+    gold = db.Column(db.Text, nullable=False)      # Store as JSON string
+    points = db.Column(db.Text, nullable=False)    # Store as JSON string
 
+    def set_gold(self, gold_dict):
+        self.gold = json.dumps(gold_dict)
+
+    def get_gold(self):
+        return json.loads(self.gold)
+
+    def set_points(self, points_dict):
+        self.points = json.dumps(points_dict)
+
+    def get_points(self):
+        return json.loads(self.points)
+    
 class League(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
@@ -631,13 +648,22 @@ def generate_teams_auto():
 
     # Example function call to generate new game week teams
     new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
+    teams_for_db = {key.split()[0]:value for key,value in new_teams.items()}
+
     next_start_gameweek = get_next_start_time(round + 1)
     update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
     # Update all users with new teams (example logic)
+    gameweek_entry = GameweekStats(
+        gameweek=round,
+        gold=json.dumps(teams_for_db),
+        points=json.dumps({})
+    )
+    db.session.add(gameweek_entry)
+    db.session.commit()
     users = User.query.all()
     for user in users:
         user.team_choice = None  # Reset team choice
-        db.session.commit()
+    db.session.commit()
     
 @app.route('/generate_teams', methods=['POST'])
 @login_required
@@ -654,11 +680,19 @@ def generate_teams():
         # Example function call to generate new game week teams
         new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
         update_gameweek_teams(new_teams, start_gameweek, end_gameweek, None)
+        teams_for_db = {key.split()[0]:value for key,value in new_teams.items()}
+        gameweek_entry = GameweekStats(
+            gameweek=round,
+            gold=json.dumps(teams_for_db),
+            points=json.dumps({})
+        )
+        db.session.add(gameweek_entry)
+        db.session.commit()
         # Update all users with new teams (example logic)
         users = User.query.all()
         for user in users:
             user.team_choice = None  # Reset team choice
-            db.session.commit()
+        db.session.commit()
 
         flash('New teams generated successfully.', 'success')
     else:
