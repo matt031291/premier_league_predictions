@@ -650,7 +650,7 @@ def register():
 def generate_teams_auto():
     current_user = User.query.filter_by(username='admin').first()
     if current_user.previous_results is None:
-        round = None
+        round = 1
     elif current_user.delayed_matches is None:
         round = len(json.loads(current_user.previous_results)) + 1
     else:
@@ -664,7 +664,7 @@ def generate_teams_auto():
     update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
     # Update all users with new teams (example logic)
     gameweek_entry = GameweekStats(
-        gameweek=10,
+        gameweek=round,
         gold=json.dumps(teams_for_db),
         points=json.dumps({})
     )
@@ -680,7 +680,7 @@ def generate_teams_auto():
 def generate_teams():
     if current_user.username == 'admin':
         if current_user.previous_results is None:
-            round = None
+            round = 1
         elif current_user.delayed_matches is None:
             round = len(json.loads(current_user.previous_results)) + 1
         else:
@@ -692,7 +692,7 @@ def generate_teams():
         update_gameweek_teams(new_teams, start_gameweek, end_gameweek, None)
         teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
         gameweek_entry = GameweekStats(
-            gameweek=14,
+            gameweek=round,
             gold=json.dumps(teams_for_db),
             points=json.dumps({})
         )
