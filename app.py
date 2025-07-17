@@ -296,6 +296,7 @@ def points_from_GD(GD):
 # Function to update scores and reset team choices
 def update_scores():
     winner_scores = get_results()
+    scores_for_db = {}
     users = User.query.all()
     for user in users:
         ###ADD Previous delayed_matches
@@ -648,7 +649,7 @@ def generate_teams_auto():
 
     # Example function call to generate new game week teams
     new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
-    teams_for_db = {key.split()[0]:value for key,value in new_teams.items()}
+    teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
 
     next_start_gameweek = get_next_start_time(round + 1)
     update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
@@ -680,7 +681,7 @@ def generate_teams():
         # Example function call to generate new game week teams
         new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
         update_gameweek_teams(new_teams, start_gameweek, end_gameweek, None)
-        teams_for_db = {key.split()[0]:value for key,value in new_teams.items()}
+        teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
         gameweek_entry = GameweekStats(
             gameweek=round,
             gold=json.dumps(teams_for_db),
