@@ -266,6 +266,7 @@ def lock_team_choices():
                     break
         else:
             user.locked_team_choice = ''
+            user.gold -= 1
             #random_value = np.random.randint(1,5)
             #for key, value in teams.items():
             #    if value == random_value:
