@@ -296,7 +296,16 @@ def points_from_GD(GD):
 # Function to update scores and reset team choices
 def update_scores():
     winner_scores = get_results()
-    scores_for_db = {}
+    scores_for_db = {key.split('_')[0]:points_from_GD(value) for key,value in winner_scores.items()}
+
+    # Find the most recent GameweekStats row with empty points
+    row = GameweekStats.query.filter_by(points='{}').order_by(GameweekStats.id.desc()).first()
+    if row:
+        row.points = json.dumps(scores_for_db)
+        db.session.commit()
+    else:
+        print("No row found with empty points.")
+
     users = User.query.all()
     for user in users:
         ###ADD Previous delayed_matches
@@ -655,7 +664,7 @@ def generate_teams_auto():
     update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
     # Update all users with new teams (example logic)
     gameweek_entry = GameweekStats(
-        gameweek=round,
+        gameweek=10,
         gold=json.dumps(teams_for_db),
         points=json.dumps({})
     )
@@ -683,7 +692,7 @@ def generate_teams():
         update_gameweek_teams(new_teams, start_gameweek, end_gameweek, None)
         teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
         gameweek_entry = GameweekStats(
-            gameweek=round,
+            gameweek=14,
             gold=json.dumps(teams_for_db),
             points=json.dumps({})
         )
