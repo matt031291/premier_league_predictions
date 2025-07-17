@@ -795,68 +795,71 @@ def createleagueIOS():
         return jsonify({"msg": "League successfully created."}), 200
 
 
+
 @app.route('/loginIOS', methods=['POST'])
 def loginIOS():
-
     data = request.json
-    username = data.get('username')
+    identifier = data.get('username')
     password = data.get('password')
-    user = User.query.filter_by(username=username).first()
     admin = User.query.filter_by(username="admin").first()
     teams = read_current_gameweek_teams()
     teams_new_string = {}
+
+    # First, try to find user by username
+    user = User.query.filter_by(username=identifier).first()
+    # If not found and identifier contains '@', try as email
+    if not user and "@" in identifier:
+        user = User.query.filter_by(email=identifier).first()
+    
+    # No user found
+    if not user:
+        return jsonify({"msg": "Invalid username"}), 401
+
+    # User found but password is wrong
+    if not user.check_password(password):
+        return jsonify({"msg": "Invalid password"}), 401
+
+    # Build teams_new_string as before
     if user.doubleup:
-        for key,value in teams.items():
-            teams_new_string[transform_match_string(key)] = 2*value
+        for key, value in teams.items():
+            teams_new_string[transform_match_string(key)] = 2 * value
     else:
-        for key,value in teams.items():
+        for key, value in teams.items():
             teams_new_string[transform_match_string(key)] = value
+
+    # Calculate round as before
     if admin.previous_results is None:
         round = 1
     else:
         if admin.delayed_matches is not None:
-            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
+            round = len(json.loads(admin.previous_results)) + len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) +31 
+            round = len(json.loads(admin.previous_results)) + 31
 
+    # Prepare token and response as before
+    token = create_access_token(identity=user.username)
+    team_choice = transform_match_string(user.team_choice) if user.team_choice else ""
+    locked_team_choice = transform_match_string(user.locked_team_choice) if user.locked_team_choice else ""
+    presented_team_choice = locked_team_choice if locked_team_choice else team_choice
 
-            
-    if user and user.check_password(password):
-        token = create_access_token(identity=username)
-        if user.team_choice is None:
-            team_choice = ""
-        else:
-            team_choice = transform_match_string(user.team_choice)
-        if user.locked_team_choice is None:
-            locked_team_choice = ""
-        else:
-            locked_team_choice = transform_match_string(user.locked_team_choice)
-        if locked_team_choice != "":
-            presented_team_choice = locked_team_choice
-        else:
-            presented_team_choice = team_choice
-        gameweek_teams = GameWeekTeams.query.first()  # Retrieve the first record
-        if not gameweek_teams:
-            deadline = ""
+    gameweek_teams = GameWeekTeams.query.first()
+    deadline = str(gameweek_teams.start_time) if gameweek_teams else ""
 
-        else:
-            deadline = str(gameweek_teams.start_time)
-        return jsonify({
-            'access_token': token,
-            'username': user.username,
-            'score': user.score,
-            'gold': user.gold,
-            'team_choice': presented_team_choice,
-            'round': round,
-            'teams': teams_new_string,
-            'doubleup':user.doubleup,
-            'doubleupsleft':user.doubleupsleft,
-            "goal_difference": user.gd,
-            'gd_bonus':user.GD_bonus,
-            'gd_bonusleft':user.GD_bonus_left,
-            'deadline':deadline
-        }), 200
-    return jsonify({"msg": "Invalid username or password"}), 401
+    return jsonify({
+        'access_token': token,
+        'username': user.username,
+        'score': user.score,
+        'gold': user.gold,
+        'team_choice': presented_team_choice,
+        'round': round,
+        'teams': teams_new_string,
+        'doubleup': user.doubleup,
+        'doubleupsleft': user.doubleupsleft,
+        'goal_difference': user.gd,
+        'gd_bonus': user.GD_bonus,
+        'gd_bonusleft': user.GD_bonus_left,
+        'deadline': deadline
+    }), 200
 
 
 
