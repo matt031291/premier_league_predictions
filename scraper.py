@@ -60,7 +60,7 @@ def get_teams(match):
 
 def get_next_start_time(round):
     round = round
-    URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
+    URL = "https://www.betexplorer.com/football/czech-republic/chance-liga/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
 
@@ -74,7 +74,7 @@ def get_next_start_time(round):
 def get_gameweek_teams(round):
     print (1111111)
     round = round
-    URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
+    URL = "https://www.betexplorer.com/football/czech-republic/chance-liga/fixtures/"
     #URL = "https://www.betexplorer.com/football/sweden/allsvenskan/fixtures/"
     response = requests.get(URL)
 
@@ -144,7 +144,7 @@ def fetch_data_results(soup):
     return df
 
 def get_results():
-    URL = "https://www.betexplorer.com/football/england/premier-league/results/"
+    URL = "https://www.betexplorer.com/football/czech-republic/chance-liga/results/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -199,7 +199,7 @@ def fetch_data_scores(soup, round):
     return df
 
 def get_round_scores(round):
-    URL = "https://www.betexplorer.com/football/england/premier-league/results/"
+    URL = "https://www.betexplorer.com/football/czech-republic/chance-liga/results/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
     round = round
