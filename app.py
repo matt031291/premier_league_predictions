@@ -1248,8 +1248,12 @@ def transform_match_string(input_string):
 def shorten_match_string(input_str):
     home,away = input_str.split(' vs ')
     HorA = input_str[-1]
-    away_new = TEAM_MAPS[away[0:-2]]
-    home_new = TEAM_MAPS[home]
+    try:
+        away_new = TEAM_MAPS[away[0:-2]]
+        home_new = TEAM_MAPS[home]
+    except KeyError:
+        away_new = away[0:3]
+        home_new = home[0:3]
     return home_new
 
 
