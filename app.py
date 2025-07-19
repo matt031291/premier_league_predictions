@@ -1398,6 +1398,43 @@ def deregister_web():
     return render_template('deregister.html')
 
 
+
+
+@app.route('/api/team_performance', methods=['GET'])
+def team_performance():
+    all_rows = GameweekStats.query.all()
+    team_points = {}
+    team_gold = {}
+
+    for row in all_rows:
+        gold = json.loads(row.gold)
+        points = json.loads(row.points)
+        if points == {}:
+            continue
+        for team, g_val in gold.items():
+            team_gold[team] = team_gold.get(team, 0) + g_val
+        for team, p_val in points.items():
+            team_points[team] = team_points.get(team, 0) + p_val
+
+    # Collect all teams
+    all_teams = set(team_gold) | set(team_points)
+    results = []
+    for team in all_teams:
+        gold_sum = team_gold.get(team, 0)
+        points_sum = team_points.get(team, 0)
+        ratio = points_sum / gold_sum if gold_sum else 0
+        results.append({
+            'team': team,
+            'points': points_sum,
+            'gold': gold_sum,
+            'ratio': ratio
+        })
+
+    # Sort by ratio descending
+    results.sort(key=lambda x: x['ratio'], reverse=True)
+    return jsonify(results)
+
+
 @app.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
