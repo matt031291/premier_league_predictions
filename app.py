@@ -1407,8 +1407,8 @@ def team_performanceIOS():
     team_gold = {}
 
     for row in all_rows:
-        gold = json.loads(row.gold)
-        points = json.loads(row.points)
+        gold = row.gold
+        points = row.points
         if points == {}:
             continue
         for team, g_val in gold.items():
