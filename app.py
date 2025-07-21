@@ -1400,8 +1400,8 @@ def deregister_web():
 
 
 
-@app.route('/api/team_performance', methods=['GET'])
-def team_performance():
+@app.route('/team_performanceIOS', methods=['GET'])
+def team_performanceIOS():
     all_rows = GameweekStats.query.all()
     team_points = {}
     team_gold = {}
