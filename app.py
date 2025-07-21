@@ -951,7 +951,7 @@ def choose_teamIOS():
         if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) +31 
+            round = len(json.loads(admin.previous_results)) +1 
     
     if user.team_choice is None:
         team_choice = ""
@@ -1011,7 +1011,7 @@ def gd_bonusIOS():
         if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) +31 
+            round = len(json.loads(admin.previous_results)) +1 
     
     if user.team_choice is None:
         team_choice = ""
@@ -1069,7 +1069,7 @@ def doubleupOS():
         if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) +31 
+            round = len(json.loads(admin.previous_results)) +1 
     
     if user.team_choice is None:
         team_choice = ""
