@@ -879,7 +879,7 @@ def loginIOS():
         if admin.delayed_matches is not None:
             round = len(json.loads(admin.previous_results)) + len(json.loads(admin.delayed_matches)) 
         else:
-            round = len(json.loads(admin.previous_results)) + 31
+            round = len(json.loads(admin.previous_results)) + 1
 
     # Prepare token and response as before
     token = create_access_token(identity=user.username)
@@ -1062,7 +1062,7 @@ def doubleupOS():
             teams_new_string[transform_match_string(key)] = 2*value
     else:
         for key,value in teams.items():
-            teams_new_string[transform_match_string(key)] = value
+            teams_new_string[transform_match_string(key)] = valuegit
     if admin.previous_results is None:
         round = 1
     else:
