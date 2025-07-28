@@ -1319,18 +1319,18 @@ def fetchNotificationsIOS():
 @app.route('/registerLeagueIOS', methods=['POST'])
 def register_leagueIOS():
     try:
-        # Parse the JSON body of the request
         data = request.get_json()
         if not data:
-            return jsonify({"message": "Invalid request data"}), 400
+            return jsonify({"success": False, "message": "An internal error occurred"}), 500
 
         league_name = data.get('league_name')
         league_password = data.get('league_password')
         username = data.get('username')
         current_user = User.query.filter_by(username=username).first()
+
         if not league_name or not league_password:
-            return jsonify({"message": "League name and password are required"}), 400
-        # Query for the league by name
+            return jsonify({"success": False, "message": "League name and password are required"}), 400
+
         league = League.query.filter_by(name=league_name).first()
 
         if league and league.check_password(league_password):
@@ -1339,17 +1339,16 @@ def register_leagueIOS():
                 current_user.add_league_id(league.id)
                 league.add_user_id(current_user.id)
                 db.session.commit()
-
-                return jsonify({"message": f"Successfully registered for {league_name}!"}), 200
+                return jsonify({"success": True, "message": "OK"}), 200
             else:
-                return jsonify({"message": f"User already registered for {league_name}!"}), 200
+                return jsonify({"success": False, "message": f"User already registered for {league_name}!"}), 200
         else:
-            return jsonify({"message": "Incorrect league name or password"}), 401  # Changed to 401 (Unauthorized)
-    
+            return jsonify({"success": False, "message": "Incorrect league name or password"}), 401
+
     except Exception as e:
-        # Log the exception for debugging
         app.logger.error(f"Error in register_leagueIOS: {e}")
-        return jsonify({"message": "An internal error occurred"}), 500
+        return jsonify({"success": False, "message": "An internal error occurred"}), 500
+
 
 
 @app.route('/send_reset_emailIOS', methods=['POST'])
