@@ -1250,7 +1250,7 @@ def transform_match_string(input_string):
         return f"{team1} 🏠 vs {team2}"
     elif suffix == "A":
         # Away emoji stays at the end
-        return f"{team1} vs {team2} 🌍"
+        return f"{team1} 🌍 vs {team2}"
     else:
         return f"{team1} vs {team2}"
 
