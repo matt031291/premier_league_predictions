@@ -1062,7 +1062,7 @@ def doubleupOS():
             teams_new_string[transform_match_string(key)] = 2*value
     else:
         for key,value in teams.items():
-            teams_new_string[transform_match_string(key)] = valuegit
+            teams_new_string[transform_match_string(key)] = value
     if admin.previous_results is None:
         round = 1
     else:
