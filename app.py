@@ -1236,14 +1236,25 @@ def get_league_details():
 def transform_match_string(input_string):
     if input_string is None:
         return None
-    # Step 1: Replace the first underscore with " Vs "
-    transformed_string = input_string.replace('_', ' vs ', 1)
-    # Step 3: Replace _H with home emoji and _A with away emoji
-    transformed_string = transformed_string.replace('_H', ' 🏠')  # Home emoji
-    transformed_string = transformed_string.replace('_A', ' 🌍')  # Away emoji (Globe + Airplane)
 
+    parts = input_string.split('_', 2)  # e.g., ["Arsenal", "Chelsea", "H"]
+    if len(parts) < 2:
+        return input_string
+
+    team1 = parts[0]
+    team2 = parts[1]
+    suffix = parts[2] if len(parts) == 3 else ""
+
+    # Bold the home team and add 🏠 in the right place
+    if suffix == "H":
+        transformed_string = f"**{team1} 🏠** vs {team2}"
+    elif suffix == "A":
+        transformed_string = f"**{team1}** vs {team2} 🌍"
+    else:
+        transformed_string = f"**{team1}** vs {team2}"
 
     return transformed_string
+
 
 def shorten_match_string(input_str):
     home,away = input_str.split(' vs ')
@@ -1260,15 +1271,25 @@ def shorten_match_string(input_str):
 def inverse_transform_match_string(transformed_string):
     if transformed_string is None:
         return None
-    # Step 1: Replace " Vs " with the first underscore
-    inverse_string = transformed_string.replace(' vs ', '_', 1)
-    
-    
-    # Step 3: Replace home and away emojis with _H and _A respectively
-    inverse_string = inverse_string.replace(' 🏠', '_H')  # Home emoji back to _H
-    inverse_string = inverse_string.replace(' 🌍', '_A')  # Away emoji back to _A
+
+    # Remove bold markers
+    cleaned = transformed_string.replace('**', '')
+
+    # Detect and remove home emoji from team1
+    if '🏠' in cleaned:
+        cleaned = cleaned.replace('🏠', '').strip()
+        suffix = '_H'
+    elif '🌍' in cleaned:
+        cleaned = cleaned.replace(' 🌍', '')  # trailing space matters
+        suffix = '_A'
+    else:
+        suffix = ''
+
+    # Replace " vs " with underscore
+    inverse_string = cleaned.replace(' vs ', '_', 1) + suffix
 
     return inverse_string
+
 
 
 def send_email(sender_email, sender_password, receiver_email, subject, body):
