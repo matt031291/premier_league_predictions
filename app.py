@@ -1237,7 +1237,7 @@ def transform_match_string(input_string):
     if input_string is None:
         return None
 
-    parts = input_string.split('_', 2)  # e.g., ["Arsenal", "Chelsea", "H"]
+    parts = input_string.split('_', 2)  # e.g., ["Liverpool", "Chelsea", "H"]
     if len(parts) < 2:
         return input_string
 
@@ -1245,15 +1245,15 @@ def transform_match_string(input_string):
     team2 = parts[1]
     suffix = parts[2] if len(parts) == 3 else ""
 
-    # Bold the home team and add 🏠 in the right place
     if suffix == "H":
-        transformed_string = f"**{team1} 🏠** vs {team2}"
+        # Home emoji after home team, before "vs"
+        return f"{team1} 🏠 vs {team2}"
     elif suffix == "A":
-        transformed_string = f"**{team1}** vs {team2} 🌍"
+        # Away emoji stays at the end
+        return f"{team1} vs {team2} 🌍"
     else:
-        transformed_string = f"**{team1}** vs {team2}"
+        return f"{team1} vs {team2}"
 
-    return transformed_string
 
 
 def shorten_match_string(input_str):
@@ -1272,23 +1272,22 @@ def inverse_transform_match_string(transformed_string):
     if transformed_string is None:
         return None
 
-    # Remove bold markers
-    cleaned = transformed_string.replace('**', '')
+    suffix = ""
+    cleaned = transformed_string
 
-    # Detect and remove home emoji from team1
+    # Detect and remove emojis to set suffix
     if '🏠' in cleaned:
-        cleaned = cleaned.replace('🏠', '').strip()
+        cleaned = cleaned.replace(' 🏠', '')  # strip home emoji
         suffix = '_H'
     elif '🌍' in cleaned:
-        cleaned = cleaned.replace(' 🌍', '')  # trailing space matters
+        cleaned = cleaned.replace(' 🌍', '')
         suffix = '_A'
-    else:
-        suffix = ''
 
-    # Replace " vs " with underscore
-    inverse_string = cleaned.replace(' vs ', '_', 1) + suffix
+    # Replace " vs " with first underscore
+    inverse_string = cleaned.replace(' vs ', '_', 1)
 
-    return inverse_string
+    return inverse_string + suffix
+
 
 
 
