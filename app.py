@@ -813,10 +813,15 @@ def registerIOS():
 def createleagueIOS():
     data = request.json
     username = data.get('username')
+
     league_name = data.get('leaguename')
     password = data.get('password')
     current_user = User.query.filter_by(username=username).first()
-
+    # First, try to find user by username
+    current_user = User.query.filter_by(username=username).first()
+    # If not found and identifier contains '@', try as email
+    if not current_user and "@" in username:
+        current_user = User.query.filter_by(email=username).first()
     # Check if the username already exists
     if League.query.filter_by(name = league_name).first():
         return jsonify({"msg": "League name already used. \n Please choose a different one."}), 401
@@ -921,7 +926,11 @@ def choose_teamIOS():
 
     team_name = inverse_transform_match_string(transformed_team_name)
     user = User.query.filter_by(username=username).first()
-
+    # First, try to find user by username
+    user = User.query.filter_by(username=username).first()
+    # If not found and identifier contains '@', try as email
+    if not user and "@" in username:
+        user = User.query.filter_by(email=username).first()
 
         # Get game week teams
     teams = read_current_gameweek_teams()
@@ -992,6 +1001,8 @@ def gd_bonusIOS():
     admin = User.query.filter_by(username="admin").first()
 
     user = User.query.filter_by(username=username).first()
+    if not user and "@" in username:
+        user = User.query.filter_by(email=username).first()
 
     if user.GD_bonus_left > 0:
         user.GD_bonus = gd_bonus
@@ -1051,6 +1062,8 @@ def doubleupOS():
     admin = User.query.filter_by(username="admin").first()
 
     user = User.query.filter_by(username=username).first()
+    if not user and "@" in username:
+        user = User.query.filter_by(email=username).first()
     if user.doubleupsleft > 0:
         user.doubleup = doubleup
     db.session.commit()
@@ -1113,7 +1126,8 @@ def get_leaguesIOS():
 
         # Retrieve leagues for the user (mock data for demonstration)
         user = User.query.filter_by(username=username).first()
-
+        if not user and "@" in username:
+            user = User.query.filter_by(email=username).first()
         user_leagues = json.loads(user.league_ids)
 
         user_leagues_str = [str(League.query.get(id).name)  for id in user_leagues]
@@ -1139,6 +1153,8 @@ def unregisterIOS():
             return jsonify({"message": "Username is required"}), 400
 
         user = User.query.filter_by(username=username).first()
+        if not user and "@" in username:
+            user = User.query.filter_by(email=username).first()
         if not user:
             return jsonify({"message": "User not found"}), 404
 
@@ -1171,7 +1187,8 @@ def get_previous_picksIOS():
     data = request.json
     username = data.get("user")
     user = User.query.filter_by(username=username).first()
-
+    if not user and "@" in username:
+        user = User.query.filter_by(email=username).first()
     previous_results_dict = json.loads(user.previous_results or '{}')
     new_results_dict = {}
     for round, round_dict in previous_results_dict.items():
@@ -1347,7 +1364,8 @@ def register_leagueIOS():
         league_password = data.get('league_password')
         username = data.get('username')
         current_user = User.query.filter_by(username=username).first()
-
+        if not current_user and "@" in username:
+            current_user = User.query.filter_by(email=username).first()
         if not league_name or not league_password:
             return jsonify({"success": False, "message": "League name and password are required"}), 400
 
