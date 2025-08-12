@@ -44,6 +44,11 @@ class GameweekStats(db.Model):
     gameweek = db.Column(db.Integer, nullable=False)
     gold = db.Column(db.Text, nullable=False)      # Store as JSON string
     points = db.Column(db.Text, nullable=False)    # Store as JSON string
+    ex_points = db.Column(db.Text, nullable=False)    # Store as JSON string
+    goals_scored = db.Column(db.Text, nullable=False)    # Store as JSON string
+    goals_against = db.Column(db.Text, nullable=False)    # Store as JSON string
+
+
 
     def set_gold(self, gold_dict):
         self.gold = json.dumps(gold_dict)
@@ -56,6 +61,12 @@ class GameweekStats(db.Model):
 
     def get_points(self):
         return json.loads(self.points)
+    
+    def set_ex_points(self, ex_points_dict):
+        self.ex_points = json.dumps(ex_points_dict)
+
+    def get_ex_points(self):
+        return json.loads(self.ex_points)
     
 class League(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -303,6 +314,9 @@ def update_scores():
     row = GameweekStats.query.filter_by(points='{}').order_by(GameweekStats.id.desc()).first()
     if row:
         row.points = json.dumps(scores_for_db)
+        #row.goals_scored = json.dumps(goals_scored_for_db)
+        #row.goals_against = json.dumps(goals_against_for_db)
+
         db.session.commit()
     else:
         print("No row found with empty points.")
@@ -658,8 +672,9 @@ def generate_teams_auto():
         round = len(json.loads(current_user.previous_results)) +len(json.loads(current_user.delayed_matches)) 
 
     # Example function call to generate new game week teams
-    new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
+    new_teams,exp_points, start_gameweek, end_gameweek = get_gameweek_teams(round)
     teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
+    ex_points_for_db = {key.split('_')[0]:value for key,value in exp_points.items()}
 
     next_start_gameweek = get_next_start_time(round + 1)
     update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
@@ -667,7 +682,10 @@ def generate_teams_auto():
     gameweek_entry = GameweekStats(
         gameweek=round,
         gold=json.dumps(teams_for_db),
-        points=json.dumps({})
+        points=json.dumps({}),
+        ex_points = json.dumps(ex_points_for_db),
+        goals_scored = json.dumps({}),
+        goals_against = json.dumps({})
     )
     db.session.add(gameweek_entry)
     db.session.commit()
@@ -689,13 +707,18 @@ def generate_teams():
 
         print (round)
         # Example function call to generate new game week teams
-        new_teams, start_gameweek, end_gameweek = get_gameweek_teams(round)
+        new_teams,exp_points, start_gameweek, end_gameweek = get_gameweek_teams(round)
         update_gameweek_teams(new_teams, start_gameweek, end_gameweek, None)
         teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
+        ex_points_for_db = {key.split('_')[0]:value for key,value in exp_points.items()}
+
         gameweek_entry = GameweekStats(
             gameweek=round,
             gold=json.dumps(teams_for_db),
-            points=json.dumps({})
+            points=json.dumps({}),
+            ex_points = json.dumps(ex_points_for_db),
+            goals_scored = json.dumps({}),
+            goals_against = json.dumps({})
         )
         db.session.add(gameweek_entry)
         db.session.commit()

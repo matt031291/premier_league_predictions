@@ -91,12 +91,25 @@ def get_gameweek_teams(round):
     data['away'] = data['away1'] + '_' + data['home1'] +'_A'
     data['home']=data['home'].str.replace(' ','')
     data['away']=data['away'].str.replace(' ','')
-
+    
     odds = {}
+    ex_points = {}
     for _,row in data.iterrows():
+        win = 1/float(row['1'])
+        draw = 1/ float(row['X'])
+        lose = 1/float(row['2'])
+        sum = (win + draw+lose)
+        win2 = win/sum
+        draw2 = draw/sum
+        lose2 = lose/sum
+
         odds[row['home']]=float(row['1'])
         odds[row['away']]= float(row['2'])
 
+        ex_points[row['home']] = 3*win2 + draw2
+        ex_points[row['away']] = 3*lose2 + draw2
+
+    print (ex_points)
 
     sorted_odds= dict(sorted(odds.items(), key=lambda item: float(item[1])))
     ordered_list = list(sorted_odds.keys())
@@ -144,7 +157,7 @@ def fetch_data_results(soup):
     return df
 
 def get_results():
-    URL = "https://www.betexplorer.com/football/england/premier-league/results/"
+    URL = "https://www.betexplorer.com/football/czech-republic/chance-liga/results/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -199,7 +212,7 @@ def fetch_data_scores(soup, round):
     return df
 
 def get_round_scores(round):
-    URL = "https://www.betexplorer.com/football/england/premier-league/results/"
+    URL = "https://www.betexplorer.com/football/czech-republic/chance-liga/results/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
     round = round
