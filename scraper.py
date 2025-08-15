@@ -157,7 +157,7 @@ def fetch_data_results(soup):
     return df
 
 def get_results():
-    URL = "https://www.betexplorer.com/football/czech-republic/chance-liga/results/"
+    URL = "https://www.betexplorer.com/football/england/premier-league/results/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -212,7 +212,7 @@ def fetch_data_scores(soup, round):
     return df
 
 def get_round_scores(round):
-    URL = "https://www.betexplorer.com/football/czech-republic/chance-liga/results/"
+    URL = "https://www.betexplorer.com/football/england/premier-league/results/"
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, 'html.parser')
     round = round
