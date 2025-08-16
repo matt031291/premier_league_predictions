@@ -1491,110 +1491,88 @@ def team_performanceIOS():
     results.sort(key=lambda x: x['ratio'], reverse=True)
     return jsonify(results)
 
-import json
-from flask import request, jsonify
+# routes_value_picks.py
+import ast
 
-import json, ast
-from flask import request, jsonify
 
-def _safe_to_dict(x):
-    """
-    Accepts dict, JSON string, Python-literal string, or None.
-    Returns {} on failure.
-    """
-    if not x:
+
+def _to_dict(value):
+    """Parse dicts stored as JSON or Python-literal strings. Return {} if invalid/empty."""
+    if not value:
         return {}
-    if isinstance(x, dict):
-        return x
-    if isinstance(x, str):
-        s = x.strip()
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        s = value.strip()
         if not s:
             return {}
-        # Try strict JSON
         try:
-            v = json.loads(s)
+            v = json.loads(s)              # proper JSON
             return v if isinstance(v, dict) else {}
         except Exception:
-            pass
-        # Try Python-literal fallback (handles single quotes)
-        try:
-            v = ast.literal_eval(s)
-            return v if isinstance(v, dict) else {}
-        except Exception:
-            return {}
+            try:
+                v = ast.literal_eval(s)    # handles single quotes
+                return v if isinstance(v, dict) else {}
+            except Exception:
+                return {}
     return {}
 
-@app.route('/value_picksIOS', methods=['GET'])
+def _row_to_teams(row):
+    gold = _to_dict(row.gold)
+    ex   = _to_dict(row.ex_points)
+    out = []
+    for team, g in gold.items():
+        try:
+            g = float(g) if g is not None else 0.0
+        except Exception:
+            g = 0.0
+        try:
+            xp = float(ex.get(team, 0.0))
+        except Exception:
+            xp = 0.0
+        out.append({
+            "team": team,
+            "gold": g,
+            "expected_points": xp,
+            "value": (xp / g) if g > 0 else 0.0
+        })
+    out.sort(key=lambda t: t["gold"], reverse=True)
+    return out
+
+@app.get("/value_picksIOS")
 def value_picksIOS():
-    """
-    GET /value_picksIOS?gameweek=all|latest|<int>
-    - all:   { "ok": true, "data": { "<gw>": [ {team,gold,expected_points,value}, ... ] } }
-    - latest or <int>: { "ok": true, "data": { "gameweek": <gw>, "teams": [ ... ] } }
-    """
-    gw_param = request.args.get('gameweek', default='latest')
-
-    def build_teams(row):
-        gold = _safe_to_dict(row.gold) or _safe_to_dict(getattr(row, 'get_gold', lambda: {})())
-        ex_points = _safe_to_dict(row.ex_points) or _safe_to_dict(getattr(row, 'get_ex_points', lambda: {})())
-
-        teams = []
-        for team, g_val in gold.items():
-            try:
-                g = float(g_val) if g_val is not None else 0.0
-            except Exception:
-                g = 0.0
-            try:
-                xp = float(ex_points.get(team, 0.0))
-            except Exception:
-                xp = 0.0
-            val = (xp / g) if g > 0 else 0.0
-            teams.append({
-                'team': team,
-                'gold': g,
-                'expected_points': xp,
-                'value': val
-            })
-
-        # Order by gold cost high→low (flip reverse=False for low→high)
-        teams.sort(key=lambda t: t['gold'], reverse=True)
-        return teams
+    """GET ?gameweek=all|latest|<int>"""
+    gw_param = request.args.get("gameweek", "latest").strip().lower()
 
     try:
-        if gw_param == 'all':
+        if gw_param == "all":
             rows = GameweekStats.query.order_by(GameweekStats.gameweek.asc()).all()
             data = {}
-            for row in rows:
+            for r in rows:
                 try:
-                    teams = build_teams(row)
-                    data[str(row.gameweek)] = teams
+                    data[str(r.gameweek)] = _row_to_teams(r)
                 except Exception as e:
-                    # log and skip bad rows instead of 500
-                    print(f"[value_picksIOS] Skip gw={row.gameweek} id={row.id} error={e}")
-            return jsonify({'ok': True, 'data': data})
+                    print(f"[value_picksIOS] skip gw={r.gameweek} id={r.id} err={e} gold={str(r.gold)[:100]} ex={str(r.ex_points)[:100]}")
+            return jsonify({"ok": True, "data": data})
 
-        # latest or specific gameweek
-        if gw_param == 'latest':
-            row = (GameweekStats.query
-                   .order_by(GameweekStats.gameweek.desc())
-                   .first())
-            if not row:
-                return jsonify({'ok': False, 'error': 'No gameweeks found'}), 404
+        if gw_param == "latest":
+            row = (GameweekStats.query.order_by(GameweekStats.gameweek.desc()).first())
         else:
-            try:
-                gw_int = int(gw_param)
-            except ValueError:
-                return jsonify({'ok': False, 'error': 'Invalid gameweek parameter'}), 400
-            row = GameweekStats.query.filter_by(gameweek=gw_int).first()
-            if not row:
-                return jsonify({'ok': False, 'error': f'Gameweek {gw_int} not found'}), 404
+            row = GameweekStats.query.filter_by(gameweek=int(gw_param)).first()
 
-        teams = build_teams(row)
-        return jsonify({'ok': True, 'data': {'gameweek': row.gameweek, 'teams': teams}})
+        if not row:
+            return jsonify({"ok": True, "data": {"gameweek": None, "teams": []}})
+
+        try:
+            teams = _row_to_teams(row)
+        except Exception as e:
+            print(f"[value_picksIOS] latest parse err gw={row.gameweek} id={row.id} err={e} gold={str(row.gold)[:100]} ex={str(row.ex_points)[:100]}")
+            teams = []  # never 500 here
+
+        return jsonify({"ok": True, "data": {"gameweek": row.gameweek, "teams": teams}})
     except Exception as e:
-        # Final safety net with a helpful message
-        print(f"[value_picksIOS] 500 error: {e}")
-        return jsonify({'ok': False, 'error': f'internal error: {e}'}), 500
-
+        print(f"[value_picksIOS] unexpected: {e}")
+        return jsonify({"ok": False, "error": "internal error"}), 500
 
 
 @app.route('/reset-password', methods=['GET', 'POST'])
