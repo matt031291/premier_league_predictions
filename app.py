@@ -45,8 +45,7 @@ class GameweekStats(db.Model):
     gold = db.Column(db.Text, nullable=False)      # Store as JSON string
     points = db.Column(db.Text, nullable=False)    # Store as JSON string
     ex_points = db.Column(db.Text, nullable=False)    # Store as JSON string
-    goals_scored = db.Column(db.Text, nullable=False)    # Store as JSON string
-    goals_against = db.Column(db.Text, nullable=False)    # Store as JSON string
+    goal_difference = db.Column(db.Text, nullable=False)    # Store as JSON string
 
 
 
@@ -309,13 +308,12 @@ def points_from_GD(GD):
 def update_scores():
     winner_scores = get_results()
     scores_for_db = {key.split('_')[0]:points_from_GD(value) for key,value in winner_scores.items()}
-
+    gd_for_db = {key.split('_')[0]:value for key,value in winner_scores.items()}
     # Find the most recent GameweekStats row with empty points
     row = GameweekStats.query.filter_by(points='{}').order_by(GameweekStats.id.desc()).first()
     if row:
         row.points = json.dumps(scores_for_db)
-        #row.goals_scored = json.dumps(goals_scored_for_db)
-        #row.goals_against = json.dumps(goals_against_for_db)
+        row.goal_difference = json.dumps(gd_for_db)
 
         db.session.commit()
     else:
@@ -684,8 +682,7 @@ def generate_teams_auto():
         gold=json.dumps(teams_for_db),
         points=json.dumps({}),
         ex_points = json.dumps(ex_points_for_db),
-        goals_scored = json.dumps({}),
-        goals_against = json.dumps({})
+        goal_difference = json.dumps({}),
     )
     db.session.add(gameweek_entry)
     db.session.commit()
@@ -717,8 +714,8 @@ def generate_teams():
             gold=json.dumps(teams_for_db),
             points=json.dumps({}),
             ex_points = json.dumps(ex_points_for_db),
-            goals_scored = json.dumps({}),
-            goals_against = json.dumps({})
+            goal_difference= json.dumps({}),
+
         )
         db.session.add(gameweek_entry)
         db.session.commit()
@@ -1493,6 +1490,67 @@ def team_performanceIOS():
     # Sort by ratio descending
     results.sort(key=lambda x: x['ratio'], reverse=True)
     return jsonify(results)
+
+import json
+from flask import request, jsonify
+
+@app.route('/value_picksIOS', methods=['GET'])
+def value_picksIOS():
+    """
+    GET /value_picksIOS?gameweek=all|latest|<int>
+    - all:   { "<gw>": [ {team,gold,expected_points,value}, ... ], ... }
+    - latest or <int>: { "gameweek": <gw>, "teams": [ ... ] }
+    """
+    gw_param = request.args.get('gameweek', default='latest')
+
+    def build_teams(row):
+        gold = row.get_gold() or {}
+        ex_points = row.get_ex_points() or {}
+        teams = []
+        for team, g_val in gold.items():
+            g = float(g_val) if g_val else 0.0
+            xp = float(ex_points.get(team, 0.0))
+            val = (xp / g) if g > 0 else 0.0
+            teams.append({
+                'team': team,
+                'gold': g,
+                'expected_points': xp,
+                'value': val
+            })
+        # Order by gold cost (high → low). Flip to reverse=False if you prefer low→high.
+        teams.sort(key=lambda t: t['gold'], reverse=True)
+        return teams
+
+    try:
+        if gw_param == 'all':
+            rows = GameweekStats.query.order_by(GameweekStats.gameweek.asc()).all()
+            data = {}
+            for row in rows:
+                teams = build_teams(row)
+                data[str(row.gameweek)] = teams
+            return jsonify({'ok': True, 'data': data})
+
+        # latest or specific int
+        if gw_param == 'latest':
+            row = (GameweekStats.query
+                   .order_by(GameweekStats.gameweek.desc())
+                   .first())
+            if not row:
+                return jsonify({'ok': False, 'error': 'No gameweeks found'}), 404
+        else:
+            try:
+                gw_int = int(gw_param)
+            except ValueError:
+                return jsonify({'ok': False, 'error': 'Invalid gameweek parameter'}), 400
+            row = GameweekStats.query.filter_by(gameweek=gw_int).first()
+            if not row:
+                return jsonify({'ok': False, 'error': f'Gameweek {gw_int} not found'}), 404
+
+        teams = build_teams(row)
+        return jsonify({'ok': True, 'data': {'gameweek': row.gameweek, 'teams': teams}})
+
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
 
 
 @app.route('/reset-password', methods=['GET', 'POST'])
