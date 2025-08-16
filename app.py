@@ -1494,22 +1494,59 @@ def team_performanceIOS():
 import json
 from flask import request, jsonify
 
+import json, ast
+from flask import request, jsonify
+
+def _safe_to_dict(x):
+    """
+    Accepts dict, JSON string, Python-literal string, or None.
+    Returns {} on failure.
+    """
+    if not x:
+        return {}
+    if isinstance(x, dict):
+        return x
+    if isinstance(x, str):
+        s = x.strip()
+        if not s:
+            return {}
+        # Try strict JSON
+        try:
+            v = json.loads(s)
+            return v if isinstance(v, dict) else {}
+        except Exception:
+            pass
+        # Try Python-literal fallback (handles single quotes)
+        try:
+            v = ast.literal_eval(s)
+            return v if isinstance(v, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
 @app.route('/value_picksIOS', methods=['GET'])
 def value_picksIOS():
     """
     GET /value_picksIOS?gameweek=all|latest|<int>
-    - all:   { "<gw>": [ {team,gold,expected_points,value}, ... ], ... }
-    - latest or <int>: { "gameweek": <gw>, "teams": [ ... ] }
+    - all:   { "ok": true, "data": { "<gw>": [ {team,gold,expected_points,value}, ... ] } }
+    - latest or <int>: { "ok": true, "data": { "gameweek": <gw>, "teams": [ ... ] } }
     """
     gw_param = request.args.get('gameweek', default='latest')
 
     def build_teams(row):
-        gold = row.get_gold() or {}
-        ex_points = row.get_ex_points() or {}
+        gold = _safe_to_dict(row.gold) or _safe_to_dict(getattr(row, 'get_gold', lambda: {})())
+        ex_points = _safe_to_dict(row.ex_points) or _safe_to_dict(getattr(row, 'get_ex_points', lambda: {})())
+
         teams = []
         for team, g_val in gold.items():
-            g = float(g_val) if g_val else 0.0
-            xp = float(ex_points.get(team, 0.0))
+            try:
+                g = float(g_val) if g_val is not None else 0.0
+            except Exception:
+                g = 0.0
+            try:
+                xp = float(ex_points.get(team, 0.0))
+            except Exception:
+                xp = 0.0
             val = (xp / g) if g > 0 else 0.0
             teams.append({
                 'team': team,
@@ -1517,7 +1554,8 @@ def value_picksIOS():
                 'expected_points': xp,
                 'value': val
             })
-        # Order by gold cost (high → low). Flip to reverse=False if you prefer low→high.
+
+        # Order by gold cost high→low (flip reverse=False for low→high)
         teams.sort(key=lambda t: t['gold'], reverse=True)
         return teams
 
@@ -1526,11 +1564,15 @@ def value_picksIOS():
             rows = GameweekStats.query.order_by(GameweekStats.gameweek.asc()).all()
             data = {}
             for row in rows:
-                teams = build_teams(row)
-                data[str(row.gameweek)] = teams
+                try:
+                    teams = build_teams(row)
+                    data[str(row.gameweek)] = teams
+                except Exception as e:
+                    # log and skip bad rows instead of 500
+                    print(f"[value_picksIOS] Skip gw={row.gameweek} id={row.id} error={e}")
             return jsonify({'ok': True, 'data': data})
 
-        # latest or specific int
+        # latest or specific gameweek
         if gw_param == 'latest':
             row = (GameweekStats.query
                    .order_by(GameweekStats.gameweek.desc())
@@ -1548,9 +1590,11 @@ def value_picksIOS():
 
         teams = build_teams(row)
         return jsonify({'ok': True, 'data': {'gameweek': row.gameweek, 'teams': teams}})
-
     except Exception as e:
-        return jsonify({'ok': False, 'error': str(e)}), 500
+        # Final safety net with a helpful message
+        print(f"[value_picksIOS] 500 error: {e}")
+        return jsonify({'ok': False, 'error': f'internal error: {e}'}), 500
+
 
 
 @app.route('/reset-password', methods=['GET', 'POST'])
