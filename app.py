@@ -306,6 +306,7 @@ def points_from_GD(GD):
 
 # Function to update scores and reset team choices
 def update_scores():
+
     winner_scores = get_results()
     scores_for_db = {key.split('_')[0]:points_from_GD(value) for key,value in winner_scores.items()}
     gd_for_db = {key.split('_')[0]:value for key,value in winner_scores.items()}
@@ -498,6 +499,13 @@ def keep_alive():
 
     if now > end_time:
         try:
+    
+            row = GameWeekTeams.query.get(1)              # fetch the first row (id=1)
+            if not row:
+                raise RuntimeError("Row id=1 not found")
+
+            row.end_time = datetime.now() + timedelta(days=100)
+            db.session.commit()
             update_scores()
             generate_teams_auto()
             return "updated scores",200
