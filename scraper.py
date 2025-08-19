@@ -114,7 +114,7 @@ def get_gameweek_teams(round):
     sorted_odds= dict(sorted(odds.items(), key=lambda item: float(item[1])))
     ordered_list = list(sorted_odds.keys())
     L =  (20-len(ordered_list))/2
-    return {ordered_list[i].strip():20-i-L for i in range(len(ordered_list))}, first_game, last_game
+    return {ordered_list[i].strip():20-i-L for i in range(len(ordered_list))},ex_points, first_game, last_game
 
 
 
