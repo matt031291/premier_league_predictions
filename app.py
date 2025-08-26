@@ -322,6 +322,7 @@ def update_scores():
 
     users = User.query.all()
     for user in users:
+        print (user,11111111)
         ###ADD Previous delayed_matches
         if user.delayed_matches is not None:
             a = json.loads(user.delayed_matches)
