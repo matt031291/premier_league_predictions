@@ -513,7 +513,7 @@ def keep_alive():
         except AttributeError: 
             return "failed updating scores", 200
 
-    if now > start_time:
+    if now > start_time - pd.Timedelta(minutes=30):
         lock_team_choices()  # Call the lock function if the condition is met
         return "team choices locked", 200
         
