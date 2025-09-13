@@ -308,8 +308,15 @@ def points_from_GD(GD):
 def update_scores():
 
     winner_scores = get_results()
-    scores_for_db = {key.split('_')[0]:points_from_GD(value) for key,value in winner_scores.items()}
-    gd_for_db = {key.split('_')[0]:value for key,value in winner_scores.items()}
+    # Get first row
+    gameweek_teams = GameWeekTeams.query.first()
+    raw_data = gameweek_teams.data
+    teams_dict = json.loads(raw_data)
+    fixtures = [key for key in teams_dict.keys()]
+    winner_scores_round = {key:val for key, val in winner_scores if key in fixtures}
+
+    scores_for_db = {key.split('_')[0]:points_from_GD(value) for key,value in winner_scores_round.items()}
+    gd_for_db = {key.split('_')[0]:value for key,value in winner_scores_round.items()}
     # Find the most recent GameweekStats row with empty points
     row = GameweekStats.query.filter_by(points='{}').order_by(GameweekStats.id.desc()).first()
     if row:
