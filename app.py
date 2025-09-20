@@ -118,6 +118,8 @@ class User(UserMixin, db.Model):
     GD_bonus = db.Column(db.Boolean, default=False)
     GD_bonus_left = db.Column(db.Integer, default = 1)
     gd = db.Column(db.Integer,default = 0)
+    handicap_bonus = db.Column(db.Boolean, default=False)
+    handicap_bonus_left = db.Column(db.Integer, default = 1)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -139,14 +141,14 @@ class User(UserMixin, db.Model):
         self.previous_results = json.dumps(previous_results_dict)
         db.session.commit()
 
-    def add_delayed_matches(self, team, double_jeopardy, gd_bonus):
+    def add_delayed_matches(self, team, double_jeopardy, gd_bonus, handicap_bonus):
         if self.delayed_matches:
             delayed_matches_list = json.loads(self.delayed_matches)
         else:
             delayed_matches_list = []
 
         # Add new result
-        output = {"team":team,"DJ":double_jeopardy,"GD":gd_bonus}
+        output = {"team":team,"DJ":double_jeopardy,"GD":gd_bonus, "HB":handicap_bonus}
         if delayed_matches_list is None:
             delayed_matches_list = [output]
         else:
@@ -345,11 +347,15 @@ def update_scores():
                         match = match_dict['team']
                         double_jepordy = match_dict['DJ']
                         gd_bonus = match_dict['GD']
+                        handicap_bonus = match_dict['HB']
                         score_for_round = None 
 
                         if match in winner_scores:
                             GD = winner_scores[match]
-                            score_for_round = points_from_GD(GD)
+                            if handicap_bonus:
+                                score_for_round = points_from_GD(GD+2)
+                            else:
+                                score_for_round = points_from_GD(GD)
                             if double_jepordy:
                                 score_for_round +=points_from_GD(GD)
                             if gd_bonus:
@@ -367,7 +373,12 @@ def update_scores():
         score_for_round = None 
         if user.locked_team_choice in winner_scores:
             GD = winner_scores[user.locked_team_choice]
-            score_for_round = points_from_GD(GD)
+            if user.handicap_bonus and user.handicap_bonus_left > 0.5:
+                score_for_round = points_from_GD(GD + 2)
+                user.handicap_bonus_left -=1
+                user.handicap_bonus = False
+            else:
+                score_for_round = points_from_GD(GD)
             if user.doubleup and user.doubleupsleft > 0.5:
                 score_for_round +=points_from_GD(GD)
                 user.doubleupsleft -= 1          
@@ -391,10 +402,12 @@ def update_scores():
             user.add_previous_result(user.locked_team_choice, score_for_round)
         elif user.locked_team_choice is not None:
             if user.doubleup:
-                user.doubleup -= 1
+                user.doubleupsleft -= 1
             if user.GD_bonus:
-                user.GD_bonus -= 1
-            user.add_delayed_matches(user.locked_team_choice, user.doubleup,user.GD_bonus)
+                user.GD_bonus_left -= 1
+            if user.handicap_bonus:
+                user.handicap_bonus_left -= 1
+            user.add_delayed_matches(user.locked_team_choice, user.doubleup,user.GD_bonus, user.handicap_bonus)
         user.team_choice = None
         user.locked_team_choice = None
     db.session.commit()
