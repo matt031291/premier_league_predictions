@@ -309,13 +309,19 @@ def update_scores():
 
     winner_scores = get_results()
     # Get first row
-    gameweek_teams = GameWeekTeams.query.first()
-    raw_data = gameweek_teams.data
-    teams_dict = json.loads(raw_data)
-    fixtures = [key for key in teams_dict.keys()]
-    winner_scores_round = {key:val for key, val in winner_scores.items() if key in fixtures}
-
+    gameweek_teams =read_current_gameweek_teams()
+    if len(gameweek_teams) < 5:
+        raise ValueError('Gameweek Teams Failiure')
+    fixtures = [str(key) for key in gameweek_teams.keys()]
+    if len(fixtures) < 5:
+        raise ValueError('Fixtures Teams Failiure')
+    print (fixtures,11111111111)
+    winner_scores_round = {key:val for key, val in winner_scores.items() if str(key) in fixtures}
+    if len(winner_scores_round) < 5:
+        raise ValueError('Winner Scores Teams Failiure')
     scores_for_db = {key.split('_')[0]:points_from_GD(value) for key,value in winner_scores_round.items()}
+    if len(scores_for_db) < 5:
+        raise ValueError('SCORES_FOR_DB Teams Failiure')
     gd_for_db = {key.split('_')[0]:value for key,value in winner_scores_round.items()}
     # Find the most recent GameweekStats row with empty points
     row = GameweekStats.query.filter_by(points='{}').order_by(GameweekStats.id.desc()).first()
