@@ -947,9 +947,9 @@ def loginIOS():
 
     # Prepare token and response as before
     token = create_access_token(identity=user.username)
-    team_choice = transform_match_string(user.team_choice) if user.team_choice else ""
-    locked_team_choice = transform_match_string(user.locked_team_choice) if user.locked_team_choice else ""
-    presented_team_choice = locked_team_choice if locked_team_choice else team_choice
+
+    presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]]
 
     gameweek_teams = GameWeekTeams.query.first()
     deadline = str(gameweek_teams.start_time) if gameweek_teams else ""
@@ -959,7 +959,7 @@ def loginIOS():
         'username': user.username,
         'score': user.score,
         'gold': user.gold,
-        'team_choice': TEAM_MAPS[presented_team_choice],
+        'team_choice': presented_team_choice_out,
         'round': round,
         'teams': teams_new_string,
         'doubleup': user.doubleup,
@@ -1021,25 +1021,14 @@ def choose_teamIOS():
         else:
             round = len(json.loads(admin.previous_results)) +1 
     
-    if user.team_choice is None:
-        team_choice = ""
-    else:
-        team_choice = transform_match_string(user.team_choice)
-    if user.locked_team_choice is None:
-        locked_team_choice = ""
-    else:
-        locked_team_choice = transform_match_string(user.locked_team_choice)
-
-    if locked_team_choice != "":
-        presented_team_choice = locked_team_choice
-    else:
-        presented_team_choice = team_choice
+    presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]]
     return jsonify({
         'access_token': "",
         'username': user.username,
         'score': user.score,
         'gold': user.gold,
-        'team_choice': TEAM_MAPS[presented_team_choice],
+        'team_choice': presented_team_choice_out,
         'round': round,
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
@@ -1083,25 +1072,14 @@ def gd_bonusIOS():
         else:
             round = len(json.loads(admin.previous_results)) +1 
     
-    if user.team_choice is None:
-        team_choice = ""
-    else:
-        team_choice = transform_match_string(user.team_choice)
-    if user.locked_team_choice is None:
-        locked_team_choice = ""
-    else:
-        locked_team_choice = transform_match_string(user.locked_team_choice)
-
-    if locked_team_choice != "":
-        presented_team_choice = locked_team_choice
-    else:
-        presented_team_choice = team_choice
+    presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]]
     return jsonify({
         'access_token': "",
         'username': user.username,
         'score': user.score,
         'gold': user.gold,
-        'team_choice': TEAM_MAPS[presented_team_choice],
+        'team_choice': presented_team_choice_out,
         'round': round,
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
@@ -1143,25 +1121,14 @@ def doubleupOS():
         else:
             round = len(json.loads(admin.previous_results)) +1 
     
-    if user.team_choice is None:
-        team_choice = ""
-    else:
-        team_choice = transform_match_string(user.team_choice)
-    if user.locked_team_choice is None:
-        locked_team_choice = ""
-    else:
-        locked_team_choice = transform_match_string(user.locked_team_choice)
-
-    if locked_team_choice != "":
-        presented_team_choice = locked_team_choice
-    else:
-        presented_team_choice = team_choice
+    presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]]
     return jsonify({
         'access_token': "",
         'username': user.username,
         'score': user.score,
         'gold': user.gold,
-        'team_choice': TEAM_MAPS[presented_team_choice],
+        'team_choice': presented_team_choice_out,
         'round': round,
         'teams': teams_new_string, 
         'doubleup':user.doubleup,
