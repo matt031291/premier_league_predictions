@@ -495,6 +495,7 @@ def update_gdbonus():
     db.session.commit()
     return jsonify({"success": True, "gdbonus": current_user.GD_bonus})
 
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -967,6 +968,8 @@ def loginIOS():
         'goal_difference': user.gd,
         'gd_bonus': user.GD_bonus,
         'gd_bonusleft': user.GD_bonus_left,
+        'handicap_bonus': user.handicap_bonus,
+        'handicap_bonus_left':user.handicap_bonus_left,
         'deadline': deadline
     }), 200
 
@@ -1035,7 +1038,9 @@ def choose_teamIOS():
         'doubleupsleft':user.doubleupsleft,
         "goal_difference": user.gd,
         'gd_bonus':user.GD_bonus,
-        'gd_bonusleft':user.GD_bonus_left
+        'gd_bonusleft':user.GD_bonus_left,
+        'handicap_bonus': user.handicap_bonus,
+        'handicap_bonus_left':user.handicap_bonus_left
     }), 200
 
 
@@ -1086,9 +1091,62 @@ def gd_bonusIOS():
         'doubleupsleft':user.doubleupsleft,
         "goal_difference": user.gd,
         'gd_bonus':user.GD_bonus,
-        'gd_bonusleft':user.GD_bonus_left
+        'gd_bonusleft':user.GD_bonus_left,
+        'handicap_bonus': user.handicap_bonus,
+        'handicap_bonus_left':user.handicap_bonus_left
     }), 200
 
+
+
+@app.route('/handicap_bonusIOS', methods=['POST'])
+def gd_bonusIOS():
+    data = request.json
+    username = data.get('username')
+    handicap_bonus = data.get('handicap_bonus')
+    admin = User.query.filter_by(username="admin").first()
+
+    user = User.query.filter_by(username=username).first()
+    if not user and "@" in username:
+        user = User.query.filter_by(email=username).first()
+
+    if user.handicap_bonus_left > 0:
+        user.handicap_bonus = handicap_bonus
+    db.session.commit()
+        # Get game week teams
+    teams = read_current_gameweek_teams()
+    teams_new_string = {}
+    if user.doubleup:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = 2*value
+    else:
+        for key,value in teams.items():
+            teams_new_string[transform_match_string(key)] = value
+    if admin.previous_results is None:
+        round = 1
+    else:
+        if admin.delayed_matches is not None:
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
+        else:
+            round = len(json.loads(admin.previous_results)) +1 
+    
+    presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]] if presented_team_choice else ''
+    return jsonify({
+        'access_token': "",
+        'username': user.username,
+        'score': user.score,
+        'gold': user.gold,
+        'team_choice': presented_team_choice_out,
+        'round': round,
+        'teams': teams_new_string, 
+        'doubleup':user.doubleup,
+        'doubleupsleft':user.doubleupsleft,
+        "goal_difference": user.gd,
+        'gd_bonus':user.GD_bonus,
+        'gd_bonusleft':user.GD_bonus_left,
+        'handicap_bonus': user.handicap_bonus,
+        'handicap_bonus_left':user.handicap_bonus_left
+    }), 200
 
 
 @app.route('/doubleupIOS', methods=['POST'])
@@ -1135,7 +1193,9 @@ def doubleupOS():
         'doubleupsleft':user.doubleupsleft,
         "goal_difference": user.gd,
         'gd_bonus':user.GD_bonus,
-        'gd_bonusleft':user.GD_bonus_left
+        'gd_bonusleft':user.GD_bonus_left,
+        'handicap_bonus': user.handicap_bonus,
+        'handicap_bonus_left':user.handicap_bonus_left
     }), 200
 
 
