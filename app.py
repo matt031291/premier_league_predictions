@@ -949,7 +949,7 @@ def loginIOS():
     token = create_access_token(identity=user.username)
 
     presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
-    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]]
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]] if presented_team_choice else ''
 
     gameweek_teams = GameWeekTeams.query.first()
     deadline = str(gameweek_teams.start_time) if gameweek_teams else ""
@@ -1022,7 +1022,7 @@ def choose_teamIOS():
             round = len(json.loads(admin.previous_results)) +1 
     
     presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
-    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]]
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]] if presented_team_choice else ''
     return jsonify({
         'access_token': "",
         'username': user.username,
@@ -1073,7 +1073,7 @@ def gd_bonusIOS():
             round = len(json.loads(admin.previous_results)) +1 
     
     presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
-    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]]
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]] if presented_team_choice else ''
     return jsonify({
         'access_token': "",
         'username': user.username,
@@ -1122,7 +1122,7 @@ def doubleupOS():
             round = len(json.loads(admin.previous_results)) +1 
     
     presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
-    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]]
+    presented_team_choice_out = TEAM_MAPS[presented_team_choice.split('_')[0]] if presented_team_choice else ''
     return jsonify({
         'access_token': "",
         'username': user.username,
