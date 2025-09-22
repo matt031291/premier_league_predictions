@@ -1571,7 +1571,7 @@ def _row_to_teams(row):
         except Exception:
             xp = 0.0
         out.append({
-            "team": team,
+            "team": TEAM_MAPS_2[team],
             "gold": g,
             "expected_points": xp,
             "value": (xp / g) if g > 0 else 0.0
