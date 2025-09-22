@@ -1099,7 +1099,7 @@ def gd_bonusIOS():
 
 
 @app.route('/handicap_bonusIOS', methods=['POST'])
-def gd_bonusIOS():
+def handicap_bonusIOS():
     data = request.json
     username = data.get('username')
     handicap_bonus = data.get('handicap_bonus')
