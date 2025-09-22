@@ -19,8 +19,11 @@ from itsdangerous import URLSafeTimedSerializer
 import smtplib
 import pandas as pd
 
-TEAM_MAPS = {"Burnley":"BUR","Sunderland":"SUN","Leeds": "LEE","Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"Wol","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
+TEAM_MAPS = {"Burnley":"BUR","Sunderland":"SUN","Leeds": "LEE","Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"WOL","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
 REVERSE_TEAM_MAPS = {value:key for key,value in TEAM_MAPS.items()}
+
+TEAM_MAPS_2 = {"Burnley":"Burnley","Sunderland":"Sunderland","Leeds": "Leeds","Leicester": "Leicester", "ManchesterCity":"Man City","Liverpool":"Liverpool","WestHam":"West Ham","Chelsea":"Chelsea","Ipswich":"Ipswitch","Arsenal":"Arsenal","Brentford":"Brentford","CrystalPalace":"Palace","Southampton":"Southampton","Tottenham":"Tottenham","Wolves":"Wolves","AstonVilla":"Villa","Brighton":"Brighton","Fulham":"Fulham","Bournemouth":"Bournemouth","Newcastle":"Newcastle","ManchesterUtd":"Man United","Everton":"Everton","Nottingham":"Forest"}
+
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -1283,8 +1286,11 @@ def get_league_details():
     for user in users[start_index:end_index]:
         team_choice = user.locked_team_choice if user.locked_team_choice is not None else ''
         if team_choice != '':
-            transformed_team_choice = transform_match_string(team_choice)
+            #transformed_team_choice = transform_match_string(team_choice)
+            transformed_team_choice = team_choice.split('_')[0]
+
             shortened_team_choice = shorten_match_string(transformed_team_choice)
+
             if user.doubleup:
                 shortened_team_choice += '*'
             if user.GD_bonus:
@@ -1330,14 +1336,12 @@ def transform_match_string(input_string):
 
 
 def shorten_match_string(input_str):
-    home,away = input_str.split(' vs ')
-    HorA = input_str[-1]
+    #home,away = input_str.split(' vs ')
+    #HorA = input_str[-1]
     try:
-        away_new = TEAM_MAPS[away[0:-2]]
-        home_new = TEAM_MAPS[home]
+        output = TEAM_MAPS[input_str]
     except KeyError:
-        away_new = away[0:3]
-        home_new = home[0:3]
+        output = TEAM_MAPS[0:3]
     return home_new
 
 
@@ -1517,7 +1521,7 @@ def team_performanceIOS():
         points_sum = team_points.get(team, 0)
         ratio = points_sum / gold_sum if gold_sum else 0
         results.append({
-            'team': team,
+            'team': TEAM_MAPS_2[team],
             'points': points_sum,
             'gold': gold_sum,
             'ratio': ratio
