@@ -528,7 +528,7 @@ def keep_alive():
         try:
     
             row = GameWeekTeams.query.get(1)        
-            gameweek_teams = get_gameweek_teams()      # fetch the first row (id=1)
+            #gameweek_teams = get_gameweek_teams()      # fetch the first row (id=1)
             if not row:
                 raise RuntimeError("Row id=1 not found")
 
