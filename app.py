@@ -235,6 +235,8 @@ def update_gameweek_teams(data, start_gameweek, end_gameweek, next_start_gamewee
         gameweek_teams.start_time = start_gameweek
         if end_gameweek is not None:
             gameweek_teams.end_time = end_gameweek
+        if next_start_gameweek is not None:
+            gameweek_teams.next_start_gameweek = next_start_gameweek
     else:
         if end_gameweek is not None:
             new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek, next_start_time = next_start_gameweek)
