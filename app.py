@@ -1322,6 +1322,8 @@ def get_league_details():
                 shortened_team_choice += '*'
             if user.GD_bonus:
                 shortened_team_choice += '+'
+            if user.handicap_bonus:
+                shortened_team_choice += '-'
         else:
             shortened_team_choice = ''
         members.append({
@@ -1369,7 +1371,7 @@ def shorten_match_string(input_str):
         output = TEAM_MAPS[input_str]
     except KeyError:
         output = TEAM_MAPS[0:3]
-    return home_new
+    return output
 
 
 def inverse_transform_match_string(transformed_string):
