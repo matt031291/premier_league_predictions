@@ -313,23 +313,23 @@ def points_from_GD(GD):
 
 # Function to update scores and reset team choices
 def update_scores():
-    gameweek_teams =read_current_gameweek_teams()
+    admin = User.query.filter_by(username='admin').first()
+    if admin.previous_results is None:
+        round = 1
+    else:
+        if admin.delayed_matches is not None:
+            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
+        else:
+            round = len(json.loads(admin.previous_results)) +1 
 
     winner_scores = get_results()
-    # Get first row
-    #if len(gameweek_teams) < 5:
-    #    raise ValueError('Gameweek Teams Failiure')
-    fixtures = [str(key) for key in gameweek_teams.keys()]
-    #if len(fixtures) < 5:
-    #    raise ValueError('Fixtures Teams Failiure')
-    print (fixtures,11111111111)
-    winner_scores_round = {key:val for key, val in winner_scores.items() if str(key) in fixtures}
-    #if len(winner_scores_round) < 5:
-    #    raise ValueError('Winner Scores Teams Failiure')
-    scores_for_db = {key.split('_')[0]:points_from_GD(value) for key,value in winner_scores_round.items()}
-    #if len(scores_for_db) < 5:
-    #    raise ValueError('SCORES_FOR_DB Teams Failiure')
-    gd_for_db = {key.split('_')[0]:value for key,value in winner_scores_round.items()}
+    round_scores = get_round_scores(round)
+    b = {REVERSE_TEAM_MAPS[i['team1']]:(points_from_GD(i['score1']-i['score2'])) for i in round_scores}
+    c = {REVERSE_TEAM_MAPS[i['team2']]:(points_from_GD(i['score2']-i['score1'])) for i in round_scores}
+    scores_for_db = {**c,**b}
+
+
+    gd_for_db = {}
     # Find the most recent GameweekStats row with empty points
     row = GameweekStats.query.filter_by(points='{}').order_by(GameweekStats.id.desc()).first()
     if row:
@@ -716,7 +716,7 @@ def generate_teams_auto():
     teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
     ex_points_for_db = {key.split('_')[0]:value for key,value in exp_points.items()}
 
-    next_start_gameweek = get_next_start_time(round + 1)
+    _,_,next_start_gameweek,_ = get_gameweek_teams(round + 1)
     update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
     # Update all users with new teams (example logic)
     gameweek_entry = GameweekStats(
