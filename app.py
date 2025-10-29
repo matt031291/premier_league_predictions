@@ -101,6 +101,36 @@ class GameWeekTeams(db.Model):
     round_results = db.Column(db.Text)
     next_start_time = db.Column(db.TIMESTAMP)
 
+class PodcastRelease(db.Model):
+    __tablename__ = "podcast_release"
+
+    id = db.Column(db.BigInteger, primary_key=True)  # mirrors BIGSERIAL
+    episode_id = db.Column(db.Text, unique=True)     # optional: Spotify/Apple GUID, can be NULL but unique if set
+    title = db.Column(db.Text, nullable=False)
+    url = db.Column(db.Text)
+    published_at = db.Column(db.TIMESTAMP(timezone=True), nullable=False)
+    created_at = db.Column(db.TIMESTAMP(timezone=True), nullable=False)
+
+
+    def __repr__(self) -> str:
+        return f"<PodcastRelease id={self.id} title={self.title!r} published_at={self.published_at}>"
+
+    def to_dict(self) -> dict:
+        # ISO-8601 with Z if UTC
+        iso = None
+        if self.published_at is not None:
+            iso = self.published_at.replace(microsecond=0).isoformat()
+            # normalize to Z if UTC offset is +00:00
+            if iso.endswith("+00:00"):
+                iso = iso[:-6] + "Z"
+        return {
+            "id": self.id,
+            "episode_id": self.episode_id,
+            "title": self.title,
+            "url": self.url,
+            "published_at": iso,
+            "created_at": self.created_at.replace(microsecond=0).isoformat() if self.created_at else None,
+        }
 
 # User model
 class User(UserMixin, db.Model):
@@ -1099,6 +1129,13 @@ def gd_bonusIOS():
     }), 200
 
 
+
+@app.route('/podcast/latest', methods=['GET'])
+def podcast_latest():
+    latest = PodcastRelease.query.order_by(PodcastRelease.published_at.desc()).first()
+    return jsonify({
+        "latest_podcast_date": latest.to_dict()["published_at"] if latest else None
+    })
 
 @app.route('/handicap_bonusIOS', methods=['POST'])
 def handicap_bonusIOS():
