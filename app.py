@@ -986,6 +986,13 @@ def loginIOS():
 
     gameweek_teams = GameWeekTeams.query.first()
     deadline = str(gameweek_teams.start_time) if gameweek_teams else ""
+    deadline_utc = ""
+    end_time_utc = ""
+    if gameweek_teams:
+        if gameweek_teams.start_time:
+            deadline_utc = gameweek_teams.start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        if gameweek_teams.end_time:
+            end_time_utc = gameweek_teams.end_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     return jsonify({
         'access_token': token,
@@ -1002,7 +1009,9 @@ def loginIOS():
         'gd_bonusleft': user.GD_bonus_left,
         'handicap_bonus': user.handicap_bonus,
         'handicap_bonus_left':user.handicap_bonus_left,
-        'deadline': deadline
+        'deadline': deadline,
+        'deadline_utc': deadline_utc,
+        'end_time_utc': end_time_utc
     }), 200
 
 
@@ -1014,6 +1023,13 @@ def choose_teamIOS():
     transformed_team_name = data.get('team_name')
     username = data.get('username')
     admin = User.query.filter_by(username="admin").first()
+
+    # Deadline enforcement — reject picks after lock window (30 min before start)
+    gameweek_teams = GameWeekTeams.query.first()
+    if gameweek_teams and gameweek_teams.start_time:
+        lock_window = gameweek_teams.start_time - timedelta(minutes=30)
+        if datetime.now() > lock_window:
+            return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
     if transformed_team_name == None or transformed_team_name == '':
         return jsonify({"msg": "team not selected"}), 401
@@ -1085,6 +1101,13 @@ def gd_bonusIOS():
     gd_bonus = data.get('gd_bonus')
     admin = User.query.filter_by(username="admin").first()
 
+    # Deadline enforcement
+    gameweek_teams = GameWeekTeams.query.first()
+    if gameweek_teams and gameweek_teams.start_time:
+        lock_window = gameweek_teams.start_time - timedelta(minutes=30)
+        if datetime.now() > lock_window:
+            return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
+
     user = User.query.filter_by(username=username).first()
     if not user and "@" in username:
         user = User.query.filter_by(email=username).first()
@@ -1144,6 +1167,13 @@ def handicap_bonusIOS():
     handicap_bonus = data.get('handicap_bonus')
     admin = User.query.filter_by(username="admin").first()
 
+    # Deadline enforcement
+    gameweek_teams = GameWeekTeams.query.first()
+    if gameweek_teams and gameweek_teams.start_time:
+        lock_window = gameweek_teams.start_time - timedelta(minutes=30)
+        if datetime.now() > lock_window:
+            return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
+
     user = User.query.filter_by(username=username).first()
     if not user and "@" in username:
         user = User.query.filter_by(email=username).first()
@@ -1194,6 +1224,13 @@ def doubleupOS():
     username = data.get('username')
     doubleup = data.get('doubleUp')
     admin = User.query.filter_by(username="admin").first()
+
+    # Deadline enforcement
+    gameweek_teams = GameWeekTeams.query.first()
+    if gameweek_teams and gameweek_teams.start_time:
+        lock_window = gameweek_teams.start_time - timedelta(minutes=30)
+        if datetime.now() > lock_window:
+            return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
     user = User.query.filter_by(username=username).first()
     if not user and "@" in username:
@@ -1475,10 +1512,39 @@ def fetchNotificationsIOS():
         start_time = None
     end_time = gameweek_teams.end_time
     next_start_time = gameweek_teams.next_start_time
+
+    # Calculate current round
+    admin = User.query.filter_by(username="admin").first()
+    if admin.previous_results is None:
+        current_round = 1
+    else:
+        if admin.delayed_matches is not None:
+            current_round = len(json.loads(admin.previous_results)) + len(json.loads(admin.delayed_matches))
+        else:
+            current_round = len(json.loads(admin.previous_results)) + 1
+
+    # Fetch future gameweek start times (up to 5, capped at GW 38)
+    future_gameweeks = []
+    for offset in range(1, 6):
+        future_round = current_round + offset
+        if future_round > 38:
+            break
+        try:
+            ft = get_next_start_time(future_round)
+            if ft is not None:
+                future_gameweeks.append({
+                    "round": future_round,
+                    "start_time": ft.isoformat()
+                })
+        except Exception:
+            pass  # scraper failure for one round should not block others
+
     return jsonify({
-        "start_time":start_time,
-        "end_time":end_time,
-        "next_start_time":next_start_time
+        "start_time": start_time,
+        "end_time": end_time,
+        "next_start_time": next_start_time,
+        "current_round": current_round,
+        "future_gameweeks": future_gameweeks
     })
 
 @app.route('/registerLeagueIOS', methods=['POST'])
