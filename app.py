@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from flask_jwt_extended import JWTManager, create_access_token
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 import numpy as np
@@ -192,20 +192,14 @@ class User(UserMixin, db.Model):
         db.session.commit()
 
     def remove_delayed_matches(self, team):
-        a=1
         if self.delayed_matches:
             delayed_matches_list = json.loads(self.delayed_matches)
         else:
             delayed_matches_list = []
 
+        delayed_matches_list = [d for d in delayed_matches_list if d.get('team') != team]
 
-        # Add new result
-        for team_dict in delayed_matches_list:
-            if team == team_dict['team']:
-                delayed_matches_list = delayed_matches_list.remove(team_dict)
-
-        # Update and save to database
-        self.delayed_matches= json.dumps(delayed_matches_list)
+        self.delayed_matches = json.dumps(delayed_matches_list)
         db.session.commit()
 
     def add_league_id(self, league_id):
@@ -292,45 +286,35 @@ def give_gold(amount):
         user.gold += amount
 
 def lock_team_choices():
-    users = User.query.all()
     teams = read_current_gameweek_teams()
-    for user in users:
+    user_ids = [u.id for u in User.query.all()]
+    for uid in user_ids:
+        # Row-level lock prevents concurrent gold deduction race
+        user = User.query.with_for_update().get(uid)
+        if user is None:
+            continue
         if user.team_choice is not None:
-            for key, value in teams.items():
-                if key == user.team_choice:
-                    if user.gold >= value:
-                        user.gold -= value
-                        user.locked_team_choice = key
-                        if user.doubleup:
-                            if user.gold >= value:
-                                user.gold -= value
-                            else:
-                                user.doubleup = False
-
-
+            cost = teams.get(user.team_choice, 0)
+            if cost > 0 and user.gold >= cost:
+                user.gold -= cost
+                user.locked_team_choice = user.team_choice
+                if user.doubleup:
+                    if user.gold >= cost:
+                        user.gold -= cost
                     else:
-                        user.locked_team_choice = None
-                    break
+                        user.doubleup = False
+            else:
+                user.locked_team_choice = None
         else:
             user.locked_team_choice = ''
             user.gold -= 1
-            #random_value = np.random.randint(1,5)
-            #for key, value in teams.items():
-            #    if value == random_value:
-            #        user.gold -= 10
-            #        user.locked_team_choice = key
-            #        break
-        ## Option to add strategies
         user.team_choice = None
-    
-    # Calculate the new time
-    new_time = datetime.now() + timedelta(days=100)
-    
-    # Update the record's start_time
-    
+        db.session.flush()
+    db.session.commit()
 
+    new_time = datetime.now() + timedelta(days=100)
     teams = {}
-    update_gameweek_teams(teams, new_time,None, None)
+    update_gameweek_teams(teams, new_time, None, None)
 
 def points_from_GD(GD):
     if GD>0:
@@ -399,7 +383,7 @@ def update_scores():
                                 score_for_round += 0.1 
                         if score_for_round is not None:
                             user.score += score_for_round
-                            user.score = format(user.score, '.1f')
+                            user.score = round(user.score, 1)
                             user.add_previous_result(match, score_for_round)
                             user.remove_delayed_matches(match)
                             user.gd += GD
@@ -424,7 +408,7 @@ def update_scores():
                 user.GD_bonus = False
             if user.locked_team_choice[0:3] == 'Lei':
                 score_for_round += 0.1
-        elif user.locked_team_choice is '':
+        elif user.locked_team_choice == '':
             score_for_round = 0
 
             GD = 0
@@ -433,7 +417,7 @@ def update_scores():
         if score_for_round is not None:
             user.score += score_for_round
             user.gd += GD
-            user.score = format(user.score, '.1f')
+            user.score = round(user.score, 1)
             user.add_previous_result(user.locked_team_choice, score_for_round)
         elif user.locked_team_choice is not None:
             if user.doubleup:
@@ -1018,10 +1002,17 @@ def loginIOS():
 
 
 @app.route('/choose_teamIOS', methods=['POST'])
+@jwt_required(optional=True)
 def choose_teamIOS():
     data = request.json
     transformed_team_name = data.get('team_name')
     username = data.get('username')
+
+    # If JWT is present, verify the identity matches the request
+    jwt_identity = get_jwt_identity()
+    if jwt_identity and jwt_identity != username:
+        return jsonify({"msg": "Unauthorized"}), 403
+
     admin = User.query.filter_by(username="admin").first()
 
     # Deadline enforcement — reject picks after lock window (30 min before start)
@@ -1095,9 +1086,13 @@ def choose_teamIOS():
 
 
 @app.route('/gd_bonusIOS', methods=['POST'])
+@jwt_required(optional=True)
 def gd_bonusIOS():
     data = request.json
     username = data.get('username')
+    jwt_identity = get_jwt_identity()
+    if jwt_identity and jwt_identity != username:
+        return jsonify({"msg": "Unauthorized"}), 403
     gd_bonus = data.get('gd_bonus')
     admin = User.query.filter_by(username="admin").first()
 
@@ -1161,9 +1156,13 @@ def podcast_latest():
     })
 
 @app.route('/handicap_bonusIOS', methods=['POST'])
+@jwt_required(optional=True)
 def handicap_bonusIOS():
     data = request.json
     username = data.get('username')
+    jwt_identity = get_jwt_identity()
+    if jwt_identity and jwt_identity != username:
+        return jsonify({"msg": "Unauthorized"}), 403
     handicap_bonus = data.get('handicap_bonus')
     admin = User.query.filter_by(username="admin").first()
 
@@ -1219,9 +1218,13 @@ def handicap_bonusIOS():
 
 
 @app.route('/doubleupIOS', methods=['POST'])
+@jwt_required(optional=True)
 def doubleupOS():
     data = request.json
     username = data.get('username')
+    jwt_identity = get_jwt_identity()
+    if jwt_identity and jwt_identity != username:
+        return jsonify({"msg": "Unauthorized"}), 403
     doubleup = data.get('doubleUp')
     admin = User.query.filter_by(username="admin").first()
 
@@ -1276,6 +1279,7 @@ def doubleupOS():
 
 
 @app.route('/getLeaguesIOS', methods=['POST'])
+@jwt_required(optional=True)
 def get_leaguesIOS():
     try:
         # Parse input JSON
