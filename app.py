@@ -613,7 +613,7 @@ def sent_reminder_email():
                 Not sure who to pick? Have a look at our experts Golden Three picks https://goldenpicksdotblog.wordpress.com/
                 Best regards
                 The Golden Picks team."""
-                send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Golden Picks Reminder", body)
+                send_email(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD'], user.email, "Golden Picks Reminder", body)
                 count += 1
             else:
                 continue
@@ -1528,7 +1528,7 @@ def send_reset_emailIOS():
         reset_url = url_for('reset_password', token=token, _external=True)
         
         # Send email (example using smtplib)
-        send_email('goldenpicks2025@gmail.com', "hihy jobv qtmr zvxl", user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
+        send_email(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD'], user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
         
         return jsonify({"msg": "Password reset email sent."}), 200
     else:
