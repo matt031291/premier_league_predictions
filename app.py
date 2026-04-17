@@ -1387,6 +1387,10 @@ def get_previous_picksIOS():
     for round, round_dict in previous_results_dict.items():
         new_results_dict[round] = {'team':transform_match_string(round_dict['team']),'score':round_dict['score']}
 
+    # Compute live worldwide rank
+    total_users = User.query.count()
+    rank = User.query.filter(User.score > user.score).count() + 1
+
     return jsonify({
         "gold": user.gold,
         "score": user.score,
@@ -1396,7 +1400,8 @@ def get_previous_picksIOS():
         "doubleupsleft": user.doubleupsleft,
         "gd_bonus_left": user.GD_bonus_left,
         "handicap_bonus_left": user.handicap_bonus_left,
-        "rank": user.rank,
+        "rank": rank,
+        "total_users": total_users,
     })
 
 
