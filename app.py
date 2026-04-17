@@ -4,20 +4,36 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import logging
 import numpy as np
 import dateparser
 import math
 import re
 import json
 import os
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 from scraper import get_gameweek_teams, get_results, get_round_scores, get_next_start_time
 from datetime import datetime,timedelta
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
-import smtplib
 import pandas as pd
+
+# Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+)
+logger = logging.getLogger('golden_picks')
+
+# Sentry (error monitoring) — set SENTRY_DSN env var on Render to enable
+sentry_dsn = os.environ.get('SENTRY_DSN')
+if sentry_dsn:
+    sentry_sdk.init(dsn=sentry_dsn, integrations=[FlaskIntegration()], traces_sample_rate=0.1)
 
 TEAM_MAPS = {"Burnley":"BUR","Sunderland":"SUN","Leeds": "LEE","Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"WOL","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
 REVERSE_TEAM_MAPS = {value:key for key,value in TEAM_MAPS.items()}
@@ -27,9 +43,14 @@ TEAM_MAPS_2 = {"Burnley":"Burnley","Sunderland":"Sunderland","Leeds": "Leeds","L
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": [
+    "https://premier-league-predictions-2.onrender.com",
+    "http://localhost:*",
+    "http://127.0.0.1:*",
+]}})
 
 jwt = JWTManager(app)
+limiter = Limiter(get_remote_address, app=app, default_limits=["200 per minute"], storage_uri="memory://")
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 db = SQLAlchemy(app)
@@ -534,8 +555,8 @@ def signup():
 
 @app.route('/keep-alive')
 def keep_alive():
-    
-    gameweek_teams = GameWeekTeams.query.first()  # Retrieve the first record
+
+    gameweek_teams = GameWeekTeams.query.first()
     if not gameweek_teams:
         return "I'm alive!", 200
 
@@ -546,22 +567,23 @@ def keep_alive():
 
     if now > end_time:
         try:
-    
-            row = GameWeekTeams.query.get(1)        
-            #gameweek_teams = get_gameweek_teams()      # fetch the first row (id=1)
+            row = GameWeekTeams.query.get(1)
             if not row:
                 raise RuntimeError("Row id=1 not found")
 
             row.end_time = datetime.now() + timedelta(days=100)
             db.session.commit()
+            logger.info("End time passed — updating scores and generating new teams")
             update_scores()
             generate_teams_auto()
             return "updated scores",200
-        except AttributeError: 
-            return "failed updating scores", 200
+        except Exception as e:
+            logger.error(f"keep-alive score update failed: {e}", exc_info=True)
+            return f"failed updating scores: {e}", 500
 
     if now > start_time - pd.Timedelta(minutes=30):
-        lock_team_choices()  # Call the lock function if the condition is met
+        logger.info("Lock window reached — locking team choices")
+        lock_team_choices()
         return "team choices locked", 200
         
     if 0 < (email_time - now).total_seconds() < 305:
@@ -578,9 +600,11 @@ def keep_alive():
             round = len(json.loads(admin.previous_results)) +1 
     try:
         results = get_round_scores(round)
-        add_results_to_gameweek(results)
-    except AttributeError:
-        pass
+        if results:
+            add_results_to_gameweek(results)
+            logger.info(f"Updated live results for round {round}: {len(results)} fixtures")
+    except Exception as e:
+        logger.warning(f"Failed to fetch live results for round {round}: {e}")
 
     return "I'm alive!", 200
 
@@ -631,6 +655,7 @@ def admin():
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -864,6 +889,7 @@ def create_league():
 
 
 @app.route('/registerIOS', methods=['POST'])
+@limiter.limit("5 per minute")
 def registerIOS():
     data = request.json
     username = data.get('username')
@@ -923,6 +949,7 @@ def createleagueIOS():
 
 
 @app.route('/loginIOS', methods=['POST'])
+@limiter.limit("10 per minute")
 def loginIOS():
     data = request.json
     identifier = data.get('username')
@@ -1588,6 +1615,7 @@ def register_leagueIOS():
 
 
 @app.route('/send_reset_emailIOS', methods=['POST'])
+@limiter.limit("3 per minute")
 def send_reset_emailIOS():
     data = request.json
     email = data.get('email')
