@@ -1022,7 +1022,9 @@ def loginIOS():
         'handicap_bonus_left':user.handicap_bonus_left,
         'deadline': deadline,
         'deadline_utc': deadline_utc,
-        'end_time_utc': end_time_utc
+        'end_time_utc': end_time_utc,
+        'rank': User.query.filter(User.score > user.score).count() + 1,
+        'total_users': User.query.count(),
     }), 200
 
 
