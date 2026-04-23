@@ -350,15 +350,15 @@ def points_from_GD(GD):
 def update_scores():
     admin = User.query.filter_by(username='admin').first()
     if admin.previous_results is None:
-        round = 1
+        current_round = 1
     else:
         if admin.delayed_matches is not None:
-            round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches)) 
+            current_round = len(json.loads(admin.previous_results)) +len(json.loads(admin.delayed_matches))
         else:
-            round = len(json.loads(admin.previous_results)) +1 
+            current_round = len(json.loads(admin.previous_results)) +1
 
     winner_scores = get_results()
-    round_scores = get_round_scores(round)
+    round_scores = get_round_scores(current_round)
     b = {REVERSE_TEAM_MAPS[i['team1']]:(points_from_GD(i['score1']-i['score2'])) for i in round_scores}
     c = {REVERSE_TEAM_MAPS[i['team2']]:(points_from_GD(i['score2']-i['score1'])) for i in round_scores}
     scores_for_db = {**c,**b}
