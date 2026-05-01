@@ -24,14 +24,12 @@ from itsdangerous import URLSafeTimedSerializer
 import pandas as pd
 
 try:
-    from google.oauth2 import service_account
-    import google.auth.transport.requests as ga_requests
-    _google_auth_available = True
+    import jwt as _pyjwt
+    _pyjwt_available = True
 except ImportError:
-    _google_auth_available = False
+    _pyjwt_available = False
 
 FIREBASE_PROJECT_ID = 'golden-picks-9f1e1'
-FCM_SCOPES = ['https://www.googleapis.com/auth/firebase.messaging']
 
 # Logging
 logging.basicConfig(
@@ -67,18 +65,41 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+_fcm_access_token = None
+_fcm_token_expiry = 0
+
 def _get_fcm_access_token():
-    if not _google_auth_available:
+    """Exchange service-account JSON for a short-lived FCM OAuth2 token. Cached until near-expiry."""
+    global _fcm_access_token, _fcm_token_expiry
+    if not _pyjwt_available:
         return None
+    import time as _time
+    if _fcm_access_token and _time.time() < _fcm_token_expiry - 60:
+        return _fcm_access_token
     service_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON')
     if not service_json:
         return None
     try:
-        creds = service_account.Credentials.from_service_account_info(
-            json.loads(service_json), scopes=FCM_SCOPES
+        creds = json.loads(service_json)
+        now = int(_time.time())
+        payload = {
+            'iss': creds['client_email'],
+            'sub': creds['client_email'],
+            'aud': 'https://oauth2.googleapis.com/token',
+            'iat': now,
+            'exp': now + 3600,
+            'scope': 'https://www.googleapis.com/auth/firebase.messaging',
+        }
+        assertion = _pyjwt.encode(payload, creds['private_key'], algorithm='RS256')
+        resp = requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer', 'assertion': assertion},
+            timeout=10,
         )
-        creds.refresh(ga_requests.Request())
-        return creds.token
+        resp.raise_for_status()
+        _fcm_access_token = resp.json()['access_token']
+        _fcm_token_expiry = now + 3600
+        return _fcm_access_token
     except Exception as e:
         logger.warning(f"FCM auth failed: {e}")
         return None
