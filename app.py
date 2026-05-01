@@ -666,7 +666,8 @@ def keep_alive():
 
     start_time = gameweek_teams.start_time
     end_time = gameweek_teams.end_time
-    email_time = start_time - pd.Timedelta(minutes=60*23)
+    reminder_24h = start_time - pd.Timedelta(hours=24)
+    reminder_1h  = start_time - pd.Timedelta(hours=1)
     now = datetime.now()
 
     if now > end_time:
@@ -689,10 +690,14 @@ def keep_alive():
         logger.info("Lock window reached — locking team choices")
         lock_team_choices()
         return "team choices locked", 200
-        
-    if 0 < (email_time - now).total_seconds() < 305:
+
+    if 0 < (reminder_24h - now).total_seconds() < 305:
         count = sent_reminder_email()
-        return f"{count} Emails sent!", 200
+        return f"{count} reminders sent (24h)!", 200
+
+    if 0 < (reminder_1h - now).total_seconds() < 305:
+        count = _send_1h_push_reminders()
+        return f"{count} push reminders sent (1h)!", 200
 
     admin = User.query.filter_by(username='admin').first()
     if admin.previous_results is None:
@@ -731,7 +736,14 @@ def sent_reminder_email():
             send_email(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD'], user.email, "Golden Picks Reminder", body)
             count += 1
         if user.fcm_token:
-            send_push(user.fcm_token, 'Golden Picks ⏰', 'Deadline in 23 hours — pick your team!')
+            send_push(user.fcm_token, 'Golden Picks ⏰', 'Deadline in 24 hours — pick your team!')
+    return count
+
+def _send_1h_push_reminders():
+    count = 0
+    for user in User.query.filter(User.team_choice == None, User.username != 'admin', User.fcm_token != None).all():
+        send_push(user.fcm_token, 'Golden Picks ⏰', '1 hour left — pick your team now!')
+        count += 1
     return count
         
 
