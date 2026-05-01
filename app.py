@@ -23,6 +23,13 @@ from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
 import pandas as pd
 
+try:
+    import firebase_admin
+    from firebase_admin import credentials as fb_credentials, messaging as fcm
+    _firebase_available = True
+except ImportError:
+    _firebase_available = False
+
 # Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -56,6 +63,53 @@ s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+_firebase_initialized = False
+
+def _init_firebase():
+    global _firebase_initialized
+    if _firebase_initialized:
+        return True
+    if not _firebase_available:
+        return False
+    service_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON')
+    if not service_json:
+        return False
+    try:
+        cred = fb_credentials.Certificate(json.loads(service_json))
+        firebase_admin.initialize_app(cred)
+        _firebase_initialized = True
+        logger.info("Firebase Admin SDK initialized")
+        return True
+    except Exception as e:
+        logger.warning(f"Firebase init failed: {e}")
+        return False
+
+def send_push(token, title, body):
+    """Send a push notification to one FCM token. Never raises."""
+    if not token or not _init_firebase():
+        return
+    try:
+        fcm.send(fcm.Message(
+            notification=fcm.Notification(title=title, body=body),
+            token=token,
+            android=fcm.AndroidConfig(
+                priority='high',
+                notification=fcm.AndroidNotification(sound='default', channel_id='deadlines'),
+            ),
+            apns=fcm.APNSConfig(
+                payload=fcm.APNSPayload(aps=fcm.Aps(sound='default')),
+            ),
+        ))
+    except Exception as e:
+        logger.warning(f"Push failed for token {str(token)[:20]}: {e}")
+
+def _team_display(team_key):
+    """Convert internal team key to a readable name."""
+    if not team_key:
+        return 'your team'
+    base = team_key.split('_')[0]
+    return TEAM_MAPS_2.get(base, base)
 
 @app.route('/live-fixtures', methods=['GET'])
 def live_fixtures():
@@ -174,6 +228,7 @@ class User(UserMixin, db.Model):
     gd = db.Column(db.Integer,default = 0)
     handicap_bonus = db.Column(db.Boolean, default=False)
     handicap_bonus_left = db.Column(db.Integer, default = 1)
+    fcm_token = db.Column(db.String(500))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -250,6 +305,13 @@ class Admin(UserMixin, db.Model):
 # Create all database tables
 with app.app_context():
     db.create_all()
+    # Add fcm_token to existing User rows (no-op if already present)
+    try:
+        with db.engine.connect() as _conn:
+            _conn.execute(db.text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS fcm_token VARCHAR(500)'))
+            _conn.commit()
+    except Exception:
+        pass
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -375,6 +437,7 @@ def update_scores():
     else:
         print("No row found with empty points.")
 
+    push_queue = []  # (fcm_token, title, body)
     users = User.query.all()
     for user in users:
         print (user,11111111)
@@ -440,6 +503,14 @@ def update_scores():
             user.gd += GD
             user.score = round(user.score, 1)
             user.add_previous_result(user.locked_team_choice, score_for_round)
+            if user.username != 'admin' and user.fcm_token:
+                team_name = _team_display(user.locked_team_choice)
+                if score_for_round >= 3:
+                    push_queue.append((user.fcm_token, f'GW{current_round} Result 🏆', f'{team_name} won! +{score_for_round}pts'))
+                elif score_for_round >= 1:
+                    push_queue.append((user.fcm_token, f'GW{current_round} Result ⚖️', f'{team_name} drew. +{score_for_round}pt'))
+                else:
+                    push_queue.append((user.fcm_token, f'GW{current_round} Result', f'{team_name} lost. 0pts this week'))
         elif user.locked_team_choice is not None:
             if user.doubleup:
                 user.doubleupsleft -= 1
@@ -448,9 +519,14 @@ def update_scores():
             if user.handicap_bonus:
                 user.handicap_bonus_left -= 1
             user.add_delayed_matches(user.locked_team_choice, user.doubleup,user.GD_bonus, user.handicap_bonus)
+        elif user.username != 'admin' and user.fcm_token:
+            push_queue.append((user.fcm_token, f'GW{current_round} Results 📊', 'Scores are in — check your result!'))
         user.team_choice = None
         user.locked_team_choice = None
     db.session.commit()
+
+    for token, title, body in push_queue:
+        send_push(token, title, body)
 
 # Routes
 @app.route('/')
@@ -613,20 +689,21 @@ def sent_reminder_email():
     users = User.query.all()
     for user in users:
         print (user.username)
+        if user.team_choice is not None:
+            continue
+        if user.username == 'admin':
+            continue
         if user.email is not None:
-            if user.team_choice is None:
-                body = f"""Hello {user.username}, 
-                Reminder that teams will be locked in approximately 23 hours, please choose your team, 
+            body = f"""Hello {user.username},
+                Reminder that teams will be locked in approximately 23 hours, please choose your team,
                 https://premier-league-predictions-2.onrender.com/
                 Not sure who to pick? Have a look at our experts Golden Three picks https://goldenpicksdotblog.wordpress.com/
                 Best regards
                 The Golden Picks team."""
-                send_email(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD'], user.email, "Golden Picks Reminder", body)
-                count += 1
-            else:
-                continue
-        else:
-            continue
+            send_email(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD'], user.email, "Golden Picks Reminder", body)
+            count += 1
+        if user.fcm_token:
+            send_push(user.fcm_token, 'Golden Picks ⏰', 'Deadline in 23 hours — pick your team!')
     return count
         
 
@@ -910,6 +987,21 @@ def registerIOS():
 
         flash('Account created successfully! Please log in.', 'success')
         return jsonify({"msg": "User successfully registered, please log in."}), 200
+
+@app.route('/save_fcm_tokenIOS', methods=['POST'])
+@jwt_required(optional=True)
+def save_fcm_token():
+    data = request.get_json() or {}
+    username = data.get('username') or get_jwt_identity()
+    token = data.get('fcm_token')
+    if not username or not token:
+        return jsonify({'msg': 'username and fcm_token required'}), 400
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'msg': 'User not found'}), 404
+    user.fcm_token = token
+    db.session.commit()
+    return jsonify({'ok': True}), 200
 
 @app.route('/createleagueIOS', methods=['POST'])
 def createleagueIOS():
