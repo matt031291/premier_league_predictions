@@ -24,11 +24,14 @@ from itsdangerous import URLSafeTimedSerializer
 import pandas as pd
 
 try:
-    import firebase_admin
-    from firebase_admin import credentials as fb_credentials, messaging as fcm
-    _firebase_available = True
+    from google.oauth2 import service_account
+    import google.auth.transport.requests as ga_requests
+    _google_auth_available = True
 except ImportError:
-    _firebase_available = False
+    _google_auth_available = False
+
+FIREBASE_PROJECT_ID = 'golden-picks-9f1e1'
+FCM_SCOPES = ['https://www.googleapis.com/auth/firebase.messaging']
 
 # Logging
 logging.basicConfig(
@@ -64,43 +67,47 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-_firebase_initialized = False
-
-def _init_firebase():
-    global _firebase_initialized
-    if _firebase_initialized:
-        return True
-    if not _firebase_available:
-        return False
+def _get_fcm_access_token():
+    if not _google_auth_available:
+        return None
     service_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON')
     if not service_json:
-        return False
+        return None
     try:
-        cred = fb_credentials.Certificate(json.loads(service_json))
-        firebase_admin.initialize_app(cred)
-        _firebase_initialized = True
-        logger.info("Firebase Admin SDK initialized")
-        return True
+        creds = service_account.Credentials.from_service_account_info(
+            json.loads(service_json), scopes=FCM_SCOPES
+        )
+        creds.refresh(ga_requests.Request())
+        return creds.token
     except Exception as e:
-        logger.warning(f"Firebase init failed: {e}")
-        return False
+        logger.warning(f"FCM auth failed: {e}")
+        return None
 
 def send_push(token, title, body):
-    """Send a push notification to one FCM token. Never raises."""
-    if not token or not _init_firebase():
+    """Send a push notification to one FCM token via HTTP v1 API. Never raises."""
+    if not token:
+        return
+    access_token = _get_fcm_access_token()
+    if not access_token:
         return
     try:
-        fcm.send(fcm.Message(
-            notification=fcm.Notification(title=title, body=body),
-            token=token,
-            android=fcm.AndroidConfig(
-                priority='high',
-                notification=fcm.AndroidNotification(sound='default', channel_id='deadlines'),
-            ),
-            apns=fcm.APNSConfig(
-                payload=fcm.APNSPayload(aps=fcm.Aps(sound='default')),
-            ),
-        ))
+        url = f'https://fcm.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/messages:send'
+        payload = {
+            'message': {
+                'token': token,
+                'notification': {'title': title, 'body': body},
+                'android': {'priority': 'high', 'notification': {'sound': 'default', 'channel_id': 'deadlines'}},
+                'apns': {'payload': {'aps': {'sound': 'default'}}},
+            }
+        }
+        resp = requests.post(
+            url,
+            headers={'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'},
+            json=payload,
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            logger.warning(f"FCM send failed {resp.status_code}: {resp.text[:200]}")
     except Exception as e:
         logger.warning(f"Push failed for token {str(token)[:20]}: {e}")
 
