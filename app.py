@@ -1983,6 +1983,11 @@ def generate_reset_token(user):
     token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm="HS256")
     return token
 
+@app.route('/support', methods=['GET'])
+def support():
+    return render_template('support.html')
+
+
 if __name__ == '__main__':
     #create_database()
     port = int(os.environ.get("PORT", 5000))
