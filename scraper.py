@@ -6,12 +6,12 @@ import logging
 
 logger = logging.getLogger('golden_picks.scraper')
 
-# End of season testing on Swedish league (Allsvenskan, runs Apr–Nov) while the Premier League is off.
-# To revert: uncomment the Premier League lines and comment out the Swedish ones.
+# Summer testing on the Finnish league (Veikkausliiga) — plays through the 2026 World Cup with no fixture gaps.
+# To revert: uncomment the Premier League lines and comment out the Finnish ones.
 # LEAGUE_PATH = "england/premier-league"
 # LEAGUE_SIZE = 20
-LEAGUE_PATH = "sweden/allsvenskan"
-LEAGUE_SIZE = 16
+LEAGUE_PATH = "finland/veikkausliiga"
+LEAGUE_SIZE = 12
 FIXTURES_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/fixtures/"
 RESULTS_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/results/"
 
