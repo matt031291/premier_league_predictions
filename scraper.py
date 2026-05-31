@@ -6,12 +6,12 @@ import logging
 
 logger = logging.getLogger('golden_picks.scraper')
 
-# Summer testing on the Finnish league (Veikkausliiga) — plays through the 2026 World Cup with no fixture gaps.
-# To revert: uncomment the Premier League lines and comment out the Finnish ones.
+# Summer testing on Brazil Série B — games now + plays continuously through the 2026 World Cup (no fixture gap).
+# To revert: uncomment the Premier League lines and comment out the Brazilian ones.
 # LEAGUE_PATH = "england/premier-league"
 # LEAGUE_SIZE = 20
-LEAGUE_PATH = "finland/veikkausliiga"
-LEAGUE_SIZE = 12
+LEAGUE_PATH = "brazil/serie-b"
+LEAGUE_SIZE = 20
 FIXTURES_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/fixtures/"
 RESULTS_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/results/"
 
@@ -66,8 +66,9 @@ def process_date(date_str):
     return pd.Timestamp(dt)
 
 def get_teams(match):
-    home,away = match.strip(' ').split('-')
-    return home,away
+    # Split on " - " (not "-") so hyphenated club names survive (e.g. Operário-PR, América-MG)
+    home, away = match.split(' - ')
+    return home.strip(), away.strip()
 
 def get_next_start_time(round):
     try:
