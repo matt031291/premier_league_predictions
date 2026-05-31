@@ -423,7 +423,7 @@ def lock_team_choices():
         db.session.flush()
     db.session.commit()
 
-    new_time = datetime.now() + timedelta(days=100)
+    new_time = datetime.utcnow() + timedelta(days=100)
     teams = {}
     update_gameweek_teams(teams, new_time, None, None)
 
@@ -666,9 +666,10 @@ def keep_alive():
 
     start_time = gameweek_teams.start_time
     end_time = gameweek_teams.end_time
-    reminder_24h = start_time - pd.Timedelta(hours=24)
-    reminder_1h  = start_time - pd.Timedelta(hours=1)
-    now = datetime.now()
+    deadline = start_time - pd.Timedelta(minutes=30)   # picks lock 30 min before start
+    reminder_24h = deadline - pd.Timedelta(hours=24)
+    reminder_1h  = deadline - pd.Timedelta(hours=1)
+    now = datetime.utcnow()
 
     if now > end_time:
         try:
@@ -676,7 +677,7 @@ def keep_alive():
             if not row:
                 raise RuntimeError("Row id=1 not found")
 
-            row.end_time = datetime.now() + timedelta(days=100)
+            row.end_time = datetime.utcnow() + timedelta(days=100)
             db.session.commit()
             logger.info("End time passed — updating scores and generating new teams")
             update_scores()
@@ -686,7 +687,7 @@ def keep_alive():
             logger.error(f"keep-alive score update failed: {e}", exc_info=True)
             return f"failed updating scores: {e}", 500
 
-    if now > start_time - pd.Timedelta(minutes=30):
+    if now > deadline:
         logger.info("Lock window reached — locking team choices")
         lock_team_choices()
         return "team choices locked", 200
@@ -1180,7 +1181,7 @@ def choose_teamIOS():
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams and gameweek_teams.start_time:
         lock_window = gameweek_teams.start_time - timedelta(minutes=30)
-        if datetime.now() > lock_window:
+        if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
     if transformed_team_name == None or transformed_team_name == '':
@@ -1261,7 +1262,7 @@ def gd_bonusIOS():
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams and gameweek_teams.start_time:
         lock_window = gameweek_teams.start_time - timedelta(minutes=30)
-        if datetime.now() > lock_window:
+        if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
     user = User.query.filter_by(username=username).first()
@@ -1331,7 +1332,7 @@ def handicap_bonusIOS():
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams and gameweek_teams.start_time:
         lock_window = gameweek_teams.start_time - timedelta(minutes=30)
-        if datetime.now() > lock_window:
+        if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
     user = User.query.filter_by(username=username).first()
@@ -1393,7 +1394,7 @@ def doubleupOS():
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams and gameweek_teams.start_time:
         lock_window = gameweek_teams.start_time - timedelta(minutes=30)
-        if datetime.now() > lock_window:
+        if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
     user = User.query.filter_by(username=username).first()
@@ -1688,7 +1689,7 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 def fetchNotificationsIOS():
     gameweek_teams = GameWeekTeams.query.first()
     start_time = gameweek_teams.start_time
-    if (start_time - timedelta(days=30)) > datetime.now():
+    if (start_time - timedelta(days=30)) > datetime.utcnow():
         start_time = None
     end_time = gameweek_teams.end_time
     next_start_time = gameweek_teams.next_start_time

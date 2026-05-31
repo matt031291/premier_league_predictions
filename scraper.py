@@ -15,6 +15,18 @@ LEAGUE_SIZE = 20
 FIXTURES_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/fixtures/"
 RESULTS_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/results/"
 
+# BetExplorer renders fixture times in CET/CEST (its timezone conversion is client-side JS,
+# so a no-JS scrape always gets the European default zone). Convert to naive UTC so the
+# backend — which compares against datetime.utcnow() — gets the real kickoff times.
+SOURCE_TZ = "Europe/Berlin"
+
+def _to_utc(ts):
+    if ts is None or pd.isna(ts):
+        return ts
+    return (pd.Timestamp(ts)
+            .tz_localize(SOURCE_TZ, ambiguous=True, nonexistent="shift_forward")
+            .tz_convert("UTC").tz_localize(None).to_pydatetime())
+
 TEAM_MAPS = {"Burnley":"BUR","Sunderland":"SUN","Leeds": "LEE","Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"WOL","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
 
 def fetch_data_fixtures(soup, round):
@@ -85,7 +97,7 @@ def get_next_start_time(round):
 
         data['Date'] = data['Date'].apply(process_date)
         first_game = data['Date'].min() - pd.Timedelta(minutes=90)
-        return first_game
+        return _to_utc(first_game)
     except Exception as e:
         logger.error(f"get_next_start_time failed for round {round}: {e}")
         return None
@@ -104,8 +116,8 @@ def get_gameweek_teams(round):
             return {}, {}, None, None
 
         data['Date'] = data['Date'].apply(process_date)
-        first_game = data['Date'].min() - pd.Timedelta(minutes=90)
-        last_game = data['Date'].max() + pd.Timedelta(minutes=240)
+        first_game = _to_utc(data['Date'].min() - pd.Timedelta(minutes=90))
+        last_game = _to_utc(data['Date'].max() + pd.Timedelta(minutes=240))
 
         data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
         data['home'] = data['home1'] + '_' + data['away1'] +'_H'
