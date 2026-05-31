@@ -6,6 +6,15 @@ import logging
 
 logger = logging.getLogger('golden_picks.scraper')
 
+# End of season testing on Swedish league (Allsvenskan, runs Apr–Nov) while the Premier League is off.
+# To revert: uncomment the Premier League lines and comment out the Swedish ones.
+# LEAGUE_PATH = "england/premier-league"
+# LEAGUE_SIZE = 20
+LEAGUE_PATH = "sweden/allsvenskan"
+LEAGUE_SIZE = 16
+FIXTURES_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/fixtures/"
+RESULTS_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/results/"
+
 TEAM_MAPS = {"Burnley":"BUR","Sunderland":"SUN","Leeds": "LEE","Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"WOL","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
 
 def fetch_data_fixtures(soup, round):
@@ -62,7 +71,7 @@ def get_teams(match):
 
 def get_next_start_time(round):
     try:
-        URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
+        URL = FIXTURES_URL
         response = requests.get(URL, timeout=15)
         response.raise_for_status()
 
@@ -82,7 +91,7 @@ def get_next_start_time(round):
 
 def get_gameweek_teams(round):
     try:
-        URL = "https://www.betexplorer.com/football/england/premier-league/fixtures/"
+        URL = FIXTURES_URL
         response = requests.get(URL, timeout=15)
         response.raise_for_status()
 
@@ -122,9 +131,9 @@ def get_gameweek_teams(round):
 
         sorted_odds= dict(sorted(odds.items(), key=lambda item: float(item[1])))
         ordered_list = list(sorted_odds.keys())
-        L =  (20-len(ordered_list))/2
+        L =  (LEAGUE_SIZE-len(ordered_list))/2
         logger.info(f"Scraped round {round}: {len(ordered_list)} teams")
-        return {ordered_list[i].strip():20-i-L for i in range(len(ordered_list))},ex_points, first_game, last_game
+        return {ordered_list[i].strip():LEAGUE_SIZE-i-L for i in range(len(ordered_list))},ex_points, first_game, last_game
     except Exception as e:
         logger.error(f"get_gameweek_teams failed for round {round}: {e}")
         return {}, {}, None, None
@@ -167,7 +176,7 @@ def fetch_data_results(soup):
 
 def get_results():
     try:
-        URL = "https://www.betexplorer.com/football/england/premier-league/results/"
+        URL = RESULTS_URL
         response = requests.get(URL, timeout=15)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -229,7 +238,7 @@ def fetch_data_scores(soup, round):
 
 def get_round_scores(round):
     try:
-        URL = "https://www.betexplorer.com/football/england/premier-league/results/"
+        URL = RESULTS_URL
         response = requests.get(URL, timeout=15)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
