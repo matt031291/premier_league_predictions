@@ -460,8 +460,10 @@ def update_scores():
     c = {REVERSE_TEAM_MAPS.get(i['team2'], i['team2']):(points_from_GD(i['score2']-i['score1'])) for i in round_scores}
     scores_for_db = {**c,**b}
 
-
-    gd_for_db = {}
+    # Per-team goal difference for this round (same keying as points), so the stat is actually stored
+    gd_b = {REVERSE_TEAM_MAPS.get(i['team1'], i['team1']):(i['score1']-i['score2']) for i in round_scores}
+    gd_c = {REVERSE_TEAM_MAPS.get(i['team2'], i['team2']):(i['score2']-i['score1']) for i in round_scores}
+    gd_for_db = {**gd_c, **gd_b}
     # Find the most recent GameweekStats row with empty points
     row = GameweekStats.query.filter_by(points='{}').order_by(GameweekStats.id.desc()).first()
     if row:
