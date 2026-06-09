@@ -195,7 +195,7 @@ def get_gameweek_teams(round):
         ordered_list = list(sorted_odds.keys())
         L =  (LEAGUE_SIZE-len(ordered_list))/2
         logger.info(f"Scraped round {round}: {len(ordered_list)} teams")
-        return {ordered_list[i].strip():LEAGUE_SIZE-i-L for i in range(len(ordered_list))},ex_points, first_game, last_game
+        return {ordered_list[i].strip():int(LEAGUE_SIZE-i-L) for i in range(len(ordered_list))},ex_points, first_game, last_game
     except Exception as e:
         logger.error(f"get_gameweek_teams failed for round {round}: {e}")
         return {}, {}, None, None

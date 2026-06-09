@@ -144,8 +144,9 @@ def _team_display(team_key):
 @app.route('/live-fixtures', methods=['GET'])
 def live_fixtures():
     gameweek_teams = GameWeekTeams.query.first()
-    results = json.loads(gameweek_teams.round_results)
-    return jsonify({"fixtures": results})
+    if not gameweek_teams or not gameweek_teams.round_results:
+        return jsonify({"fixtures": []})
+    return jsonify({"fixtures": json.loads(gameweek_teams.round_results)})
 
 class GameweekStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -424,7 +425,7 @@ def lock_team_choices():
                 user.locked_team_choice = None
         else:
             user.locked_team_choice = ''
-            user.gold -= 1
+            user.gold = max(0, user.gold - 1)  # no-pick penalty, never below 0
         user.team_choice = None
         db.session.flush()
     db.session.commit()
@@ -1123,7 +1124,7 @@ def loginIOS():
     # First, try to find user by username
     user = User.query.filter_by(username=identifier).first()
     # If not found and identifier contains '@', try as email
-    if not user and "@" in identifier:
+    if not user and identifier and "@" in identifier:
         user = User.query.filter_by(email=identifier).first()
     
     # No user found
@@ -1729,8 +1730,11 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 @app.route('/fetchNotificationsIOS')
 def fetchNotificationsIOS():
     gameweek_teams = GameWeekTeams.query.first()
+    if not gameweek_teams:
+        return jsonify({"start_time": None, "end_time": None, "next_start_time": None,
+                        "current_round": None, "future_gameweeks": []})
     start_time = gameweek_teams.start_time
-    if (start_time - timedelta(days=30)) > datetime.utcnow():
+    if start_time is not None and (start_time - timedelta(days=30)) > datetime.utcnow():
         start_time = None
     end_time = gameweek_teams.end_time
     next_start_time = gameweek_teams.next_start_time
@@ -1882,7 +1886,7 @@ def team_performanceIOS():
         points_sum = team_points.get(team, 0)
         ratio = points_sum / gold_sum if gold_sum else 0
         results.append({
-            'team': TEAM_MAPS_2[team],
+            'team': TEAM_MAPS_2.get(team, team),
             'points': points_sum,
             'gold': gold_sum,
             'ratio': ratio
@@ -1932,7 +1936,7 @@ def _row_to_teams(row):
         except Exception:
             xp = 0.0
         out.append({
-            "team": TEAM_MAPS_2[team],
+            "team": TEAM_MAPS_2.get(team, team),
             "gold": g,
             "expected_points": xp,
             "value": (xp / g) if g > 0 else 0.0
@@ -1986,7 +1990,10 @@ def reset_password():
             return jsonify({"msg": "Invalid or missing token."}), 400
 
         # Decode the token to validate it
-        email = s.loads(token, salt='password-reset-salt', max_age=3600)  # Token valid for 1 hour
+        try:
+            email = s.loads(token, salt='password-reset-salt', max_age=3600)  # Token valid for 1 hour
+        except Exception:
+            return jsonify({"msg": "Invalid or expired token."}), 400
         user = User.query.filter_by(email=email).first()
         if not user:
 
@@ -2001,7 +2008,10 @@ def reset_password():
         new_password = request.form['password']
 
         # Decode the token to validate it
-        email = s.loads(token, salt='password-reset-salt', max_age=3600)  # Token valid for 1 hour
+        try:
+            email = s.loads(token, salt='password-reset-salt', max_age=3600)  # Token valid for 1 hour
+        except Exception:
+            return jsonify({"msg": "Invalid or expired token."}), 400
         user = User.query.filter_by(email=email).first()
 
         if not user:
