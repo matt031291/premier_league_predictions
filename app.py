@@ -208,6 +208,8 @@ class GameWeekTeams(db.Model):
     next_start_time = db.Column(db.TIMESTAMP)
     next_start_time_2 = db.Column(db.TIMESTAMP)
     next_start_time_3 = db.Column(db.TIMESTAMP)
+    reminder_24h_sent = db.Column(db.Boolean, default=False)
+    reminder_1h_sent = db.Column(db.Boolean, default=False)
 
 class PodcastRelease(db.Model):
     __tablename__ = "podcast_release"
@@ -344,6 +346,8 @@ with app.app_context():
             _conn.execute(db.text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS fcm_token VARCHAR(500)'))
             _conn.execute(db.text('ALTER TABLE game_week_teams ADD COLUMN IF NOT EXISTS next_start_time_2 TIMESTAMP'))
             _conn.execute(db.text('ALTER TABLE game_week_teams ADD COLUMN IF NOT EXISTS next_start_time_3 TIMESTAMP'))
+            _conn.execute(db.text('ALTER TABLE game_week_teams ADD COLUMN IF NOT EXISTS reminder_24h_sent BOOLEAN DEFAULT FALSE'))
+            _conn.execute(db.text('ALTER TABLE game_week_teams ADD COLUMN IF NOT EXISTS reminder_1h_sent BOOLEAN DEFAULT FALSE'))
             _conn.commit()
     except Exception:
         pass
@@ -375,10 +379,12 @@ def update_gameweek_teams(data, start_gameweek, end_gameweek, next_start_gamewee
     if gameweek_teams:
         gameweek_teams.data = json.dumps(data)
         gameweek_teams.start_time = start_gameweek
+        gameweek_teams.reminder_24h_sent = False  # new gameweek → re-arm reminders
+        gameweek_teams.reminder_1h_sent = False
         if end_gameweek is not None:
             gameweek_teams.end_time = end_gameweek
         if next_start_gameweek is not None:
-            gameweek_teams.next_start_gameweek = next_start_gameweek
+            gameweek_teams.next_start_time = next_start_gameweek
     else:
         if end_gameweek is not None:
             new_gameweek_teams = GameWeekTeams(data=json.dumps(data),start_time = start_gameweek, end_time = end_gameweek, next_start_time = next_start_gameweek)
@@ -620,6 +626,7 @@ def choose_team():
     return redirect(url_for('home', username=current_user.username))
 
 @app.route('/update_doubleup', methods=['POST'])
+@login_required
 def update_doubleup():
     # Retrieve data from the request
     doubleup_state = request.json.get('doubleup')
@@ -633,6 +640,7 @@ def update_doubleup():
     return jsonify({"success": True, "doubleup": current_user.doubleup})
 
 @app.route('/update_gdbonus', methods=['POST'])
+@login_required
 def update_gdbonus():
     # Retrieve data from the request
     gdbonus_state = request.json.get('gdbonus')
@@ -709,12 +717,17 @@ def keep_alive():
         lock_team_choices()
         return "team choices locked", 200
 
-    if 0 < (reminder_24h - now).total_seconds() < 305:
+    # Fire each reminder once, anywhere in its window — robust to ping cadence, no double-sends.
+    if reminder_24h <= now < reminder_1h and not gameweek_teams.reminder_24h_sent:
         count = sent_reminder_email()
+        gameweek_teams.reminder_24h_sent = True
+        db.session.commit()
         return f"{count} reminders sent (24h)!", 200
 
-    if 0 < (reminder_1h - now).total_seconds() < 305:
+    if reminder_1h <= now < deadline and not gameweek_teams.reminder_1h_sent:
         count = _send_1h_push_reminders()
+        gameweek_teams.reminder_1h_sent = True
+        db.session.commit()
         return f"{count} push reminders sent (1h)!", 200
 
     admin = User.query.filter_by(username='admin').first()
@@ -1193,6 +1206,59 @@ def loginIOS():
     }), 200
 
 
+@app.route('/refreshIOS', methods=['POST'])
+@jwt_required()
+def refreshIOS():
+    # Lightweight dashboard refresh for the authenticated user (no re-login / no new token)
+    user = User.query.filter_by(username=get_jwt_identity()).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+    admin = User.query.filter_by(username='admin').first()
+
+    teams = read_current_gameweek_teams()
+    mult = 2 if user.doubleup else 1
+    teams_new_string = {transform_match_string(k): mult * v for k, v in teams.items()}
+
+    if admin is None or admin.previous_results is None:
+        round = 1
+    elif admin.delayed_matches is not None:
+        round = len(json.loads(admin.previous_results)) + len(json.loads(admin.delayed_matches))
+    else:
+        round = len(json.loads(admin.previous_results)) + 1
+
+    presented_team_choice = user.locked_team_choice if user.locked_team_choice else user.team_choice
+    presented_team_choice_out = TEAM_MAPS.get(presented_team_choice.split('_')[0], presented_team_choice.split('_')[0]) if presented_team_choice else ''
+
+    gameweek_teams = GameWeekTeams.query.first()
+    deadline = str(gameweek_teams.start_time) if gameweek_teams else ""
+    deadline_utc = ""
+    end_time_utc = ""
+    if gameweek_teams:
+        if gameweek_teams.start_time:
+            deadline_utc = gameweek_teams.start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        if gameweek_teams.end_time:
+            end_time_utc = gameweek_teams.end_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    return jsonify({
+        'username': user.username,
+        'score': user.score,
+        'gold': user.gold,
+        'team_choice': presented_team_choice_out,
+        'round': round,
+        'teams': teams_new_string,
+        'doubleup': user.doubleup,
+        'doubleupsleft': user.doubleupsleft,
+        'goal_difference': user.gd,
+        'gd_bonus': user.GD_bonus,
+        'gd_bonusleft': user.GD_bonus_left,
+        'handicap_bonus': user.handicap_bonus,
+        'handicap_bonus_left': user.handicap_bonus_left,
+        'deadline': deadline,
+        'deadline_utc': deadline_utc,
+        'end_time_utc': end_time_utc,
+        'rank': User.query.filter(User.score > user.score).count() + 1,
+        'total_users': User.query.count(),
+    }), 200
 
 
 @app.route('/choose_teamIOS', methods=['POST'])
@@ -1712,22 +1778,17 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
     # Add the email body to the MIME message
     message.attach(MIMEText(body, 'plain'))
 
-    # Establish a connection to the Gmail SMTP server
-    server = smtplib.SMTP(smtp_server, smtp_port)
-    server.starttls()  # Upgrade the connection to a secure encrypted SSL/TLS connection
-
-    # Log in to the SMTP server using your email and password
-    server.login(sender_email, sender_password)
-
-    # Send the email
+    # Send the email — log failures instead of swallowing them; never raise (callers are best-effort)
     try:
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(sender_email, sender_password)
         server.sendmail(sender_email, receiver_email, message.as_string())
-
-        print("Email sent successfully!")
-    except:
-        print(f"Email to {receiver_email} not sent")
-    server.quit()
-    return jsonify({"msg": "Password reset email sent."}), 200
+        server.quit()
+        return True
+    except Exception as e:
+        logger.error(f"Email to {receiver_email} failed: {e}")
+        return False
 
 @app.route('/fetchNotificationsIOS')
 def fetchNotificationsIOS():
@@ -1818,18 +1879,17 @@ def register_leagueIOS():
 def send_reset_emailIOS():
     data = request.json
     email = data.get('email')
-    user = User.query.filter_by(email=email).first()
-    
+    user = User.query.filter_by(email=email).first() if email else None
+
     if user:
         token = s.dumps(email, salt='password-reset-salt')
         reset_url = url_for('reset_password', token=token, _external=True)
-        
+
         # Send email (example using smtplib)
         send_email(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD'], user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
-        
-        return jsonify({"msg": "Password reset email sent."}), 200
-    else:
-        return jsonify({"msg": "Email not found."}), 404
+
+    # Always return the same response regardless of whether the email exists (no account enumeration)
+    return jsonify({"msg": "If that email is registered, a reset link has been sent."}), 200
 
 @app.route('/deregister', methods=['GET', 'POST'])
 def deregister_web():
