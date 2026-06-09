@@ -673,9 +673,9 @@ def keep_alive():
 
     if now > end_time:
         try:
-            row = GameWeekTeams.query.get(1)
+            row = GameWeekTeams.query.first()
             if not row:
-                raise RuntimeError("Row id=1 not found")
+                raise RuntimeError("No gameweek row found")
 
             row.end_time = datetime.utcnow() + timedelta(days=100)
             db.session.commit()
