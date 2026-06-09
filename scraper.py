@@ -28,6 +28,14 @@ def _to_utc(ts):
             .tz_localize(SOURCE_TZ, ambiguous=True, nonexistent="shift_forward")
             .tz_convert("UTC").tz_localize(None).to_pydatetime())
 
+def _header_round(text):
+    """Return the round number if `text` is a round-header row (e.g. '11. Round'), else None.
+    Exact match — avoids the old substring bug where '1.' matched '11.', '21.', etc."""
+    if 'Round' not in text or len(text) > 40:
+        return None
+    m = re.search(r'(\d+)\.\s*Round|Round\s*(\d+)', text)
+    return int(m.group(1) or m.group(2)) if m else None
+
 TEAM_MAPS = {"Burnley":"BUR","Sunderland":"SUN","Leeds": "LEE","Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"WOL","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
 
 def fetch_data_fixtures(soup, round):
@@ -37,31 +45,32 @@ def fetch_data_fixtures(soup, round):
         return pd.DataFrame(columns=['Date','Match','1','X','2'])
     data = []
     rows = table_matches.find_all('tr')
-    keep_searching = False
-    start_searching = False
     if round is None:
         round = 1
+    start_searching = False
     for row in rows:
-        if 'Round' in row.text and str(round)+'.' in row.text:
-            start_searching = True
-        if start_searching:
-            if 'Round' in row.text and str(round+1)+'.' in row.text:
-                df = pd.DataFrame(data,columns=["1","X","2","Date","Match","-","-","-","-","-"])
-                return df[['Date','Match','1','X','2']]
-
-            utils = []
-            cols = row.find_all('td')
-            utils = [button['data-odd'] for button in row.find_all('button')]
-            for element in cols:
-                try:
-                    if 'data-odd' in element.attrs:
-                        pass
-                    else:
-                        utils.append(element.span.span.span['data-odd'])
-                except:
-                    utils.append(element.text)
-            if len(utils) == 10:
-                data.append(utils)
+        hr = _header_round(row.text)
+        if hr is not None:
+            if hr == round:
+                start_searching = True
+            elif start_searching:
+                break  # reached the next round's header
+            continue
+        if not start_searching:
+            continue
+        utils = []
+        cols = row.find_all('td')
+        utils = [button['data-odd'] for button in row.find_all('button')]
+        for element in cols:
+            try:
+                if 'data-odd' in element.attrs:
+                    pass
+                else:
+                    utils.append(element.span.span.span['data-odd'])
+            except:
+                utils.append(element.text)
+        if len(utils) == 10:
+            data.append(utils)
     df = pd.DataFrame(data,columns=["1","X","2","Date","Match","-","-","-","-","-"])
     return df[['Date','Match','1','X','2']]
 
@@ -79,9 +88,13 @@ def process_date(date_str):
     return pd.Timestamp(dt)
 
 def get_teams(match):
-    # Split on " - " (not "-") so hyphenated club names survive (e.g. Operário-PR, América-MG)
-    home, away = match.split(' - ')
-    return home.strip(), away.strip()
+    # Split on " - " (not "-") so hyphenated club names survive (e.g. Operário-PR, América-MG).
+    # Returns (None, None) for malformed cells (status text, awards) so one bad row can be dropped
+    # rather than throwing and discarding the whole round.
+    parts = match.split(' - ')
+    if len(parts) != 2:
+        return None, None
+    return parts[0].strip(), parts[1].strip()
 
 def get_next_start_time(round):
     try:
@@ -152,6 +165,7 @@ def get_gameweek_teams(round):
         last_game = _to_utc(data['Date'].max() + pd.Timedelta(minutes=240))
 
         data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
+        data = data.dropna(subset=['home1','away1'])
         data['home'] = data['home1'] + '_' + data['away1'] +'_H'
         data['away'] = data['away1'] + '_' + data['home1'] +'_A'
         data['home']=data['home'].str.replace(' ','')
@@ -160,9 +174,12 @@ def get_gameweek_teams(round):
         odds = {}
         ex_points = {}
         for _,row in data.iterrows():
-            win = 1/float(row['1'])
-            draw = 1/ float(row['X'])
-            lose = 1/float(row['2'])
+            try:
+                win = 1/float(row['1'])
+                draw = 1/float(row['X'])
+                lose = 1/float(row['2'])
+            except (ValueError, ZeroDivisionError):
+                continue  # postponed / no odds yet — skip this game, keep the rest of the round
             total = (win + draw+lose)
             win2 = win/total
             draw2 = draw/total
@@ -232,17 +249,21 @@ def get_results():
             return {}
 
         data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
+        data = data.dropna(subset=['home1','away1'])
         data['home'] = data['home1'] + '_' + data['away1'] +'_H'
         data['away'] = data['away1'] + '_' + data['home1'] +'_A'
         data['home']=data['home'].str.replace(' ','')
         data['away']=data['away'].str.replace(' ','')
 
-        data['points_home']=data['result'].apply(get_result_points_home).apply(pd.Series)
-        data['points_away']=data['result'].apply(get_result_points_away).apply(pd.Series)
         points = {}
         for _,row in data.iterrows():
-            points[row['home']]=int(row['points_home'])
-            points[row['away']]= float(row['points_away'])
+            try:
+                h, a = row['result'].split(':')
+                gd_home, gd_away = int(h) - int(a), int(a) - int(h)
+            except (ValueError, AttributeError):
+                continue  # not a clean 'N:N' result (postponed/awarded) — skip this game
+            points[row['home']] = gd_home
+            points[row['away']] = gd_away
 
         return points
     except Exception as e:
@@ -257,12 +278,17 @@ def fetch_data_scores(soup, round):
         return pd.DataFrame(columns=["Match","result","odds","date"])
     data = []
     rows = table_matches.find_all('tr')
-    total_rounds = 0
+    in_round = False
     for row in rows:
-        if 'Round' in row.text and str(round -1)+'.' in row.text:
-            total_rounds += 1
-            if total_rounds == 1:
-                break
+        hr = _header_round(row.text)
+        if hr is not None:
+            if hr == round:
+                in_round = True
+            elif in_round:
+                break  # reached the next round's section
+            continue
+        if not in_round:
+            continue
         utils = []
         cols = row.find_all('td')
         utils = [button['data-odd'] for button in row.find_all('button')]
@@ -291,6 +317,7 @@ def get_round_scores(round):
         if data.empty:
             return []
         data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
+        data = data.dropna(subset=['home1','away1'])
         data['home'] = data['home1'] + '_' + data['away1'] +'_H'
         data['away'] = data['away1'] + '_' + data['home1'] +'_A'
         data['home']=data['home'].str.replace(' ','')
@@ -298,11 +325,14 @@ def get_round_scores(round):
 
         scores = []
         for _,row in data.iterrows():
-            h,a = row.result.split(':')
             try:
-                score = {"team1": TEAM_MAPS[row['home1'].replace(' ','')], "team2": TEAM_MAPS[row['away1'].replace(' ','')], "score1": int(h), "score2": int(a)}
-            except KeyError:
-                score = {"team1": row['home1'].replace(' ',''), "team2": row['away1'].replace(' ',''), "score1": int(h), "score2": int(a)}
+                h, a = row.result.split(':')
+                h, a = int(h), int(a)
+            except (ValueError, AttributeError):
+                continue  # not a clean 'N:N' result (postponed/awarded) — skip this game
+            name1 = row['home1'].replace(' ','')
+            name2 = row['away1'].replace(' ','')
+            score = {"team1": TEAM_MAPS.get(name1, name1), "team2": TEAM_MAPS.get(name2, name2), "score1": h, "score2": a}
             scores += [score]
         return scores
     except Exception as e:

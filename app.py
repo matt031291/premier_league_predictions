@@ -13,6 +13,7 @@ import math
 import re
 import json
 import os
+import requests
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from scraper import get_gameweek_teams, get_results, get_round_scores, get_next_start_time, get_round_start_time
@@ -676,19 +677,27 @@ def keep_alive():
     now = datetime.utcnow()
 
     if now > end_time:
+        row = GameWeekTeams.query.first()
+        if not row:
+            return "I'm alive!", 200
+        original_end = row.end_time
+        # Claim the round by pushing end_time out — guards against a concurrent /keep-alive
+        # double-scoring. Restored below if scoring fails, so a transient error retries
+        # next poll instead of silently skipping the round forever.
+        row.end_time = datetime.utcnow() + timedelta(days=100)
+        db.session.commit()
         try:
-            row = GameWeekTeams.query.first()
-            if not row:
-                raise RuntimeError("No gameweek row found")
-
-            row.end_time = datetime.utcnow() + timedelta(days=100)
-            db.session.commit()
             logger.info("End time passed — updating scores and generating new teams")
             update_scores()
             generate_teams_auto()
             return "updated scores",200
         except Exception as e:
             logger.error(f"keep-alive score update failed: {e}", exc_info=True)
+            db.session.rollback()
+            r = GameWeekTeams.query.first()
+            if r:
+                r.end_time = original_end
+                db.session.commit()
             return f"failed updating scores: {e}", 500
 
     if now > deadline:
@@ -1501,6 +1510,9 @@ def unregisterIOS():
             user = User.query.filter_by(email=username).first()
         if not user:
             return jsonify({"message": "User not found"}), 404
+        if user.username == 'admin':
+            # admin is the round-counter anchor for the whole game — never delete it
+            return jsonify({"message": "Cannot delete the admin account"}), 403
 
         # Get the list of league IDs this user belongs to
         league_ids = json.loads(user.league_ids) if user.league_ids else []
@@ -1806,6 +1818,8 @@ def deregister_web():
         user = User.query.filter_by(username=username).first()
         if not user or not user.check_password(password):
             return render_template('deregister.html', error="Invalid username or password")
+        if user.username == 'admin':
+            return render_template('deregister.html', error="Cannot delete the admin account")
 
         # Perform the same logic as in unregisterIOS
         league_ids = json.loads(user.league_ids) if user.league_ids else []
