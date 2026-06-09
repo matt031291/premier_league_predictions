@@ -15,7 +15,7 @@ import json
 import os
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
-from scraper import get_gameweek_teams, get_results, get_round_scores, get_next_start_time
+from scraper import get_gameweek_teams, get_results, get_round_scores, get_next_start_time, get_round_start_time
 from datetime import datetime,timedelta
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -203,6 +203,8 @@ class GameWeekTeams(db.Model):
     end_time = db.Column(db.TIMESTAMP)
     round_results = db.Column(db.Text)
     next_start_time = db.Column(db.TIMESTAMP)
+    next_start_time_2 = db.Column(db.TIMESTAMP)
+    next_start_time_3 = db.Column(db.TIMESTAMP)
 
 class PodcastRelease(db.Model):
     __tablename__ = "podcast_release"
@@ -337,6 +339,8 @@ with app.app_context():
     try:
         with db.engine.connect() as _conn:
             _conn.execute(db.text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS fcm_token VARCHAR(500)'))
+            _conn.execute(db.text('ALTER TABLE game_week_teams ADD COLUMN IF NOT EXISTS next_start_time_2 TIMESTAMP'))
+            _conn.execute(db.text('ALTER TABLE game_week_teams ADD COLUMN IF NOT EXISTS next_start_time_3 TIMESTAMP'))
             _conn.commit()
     except Exception:
         pass
@@ -859,6 +863,17 @@ def register():
 
     return render_template('register.html')
 
+def _store_next_start_times(current_round):
+    """Cache the start times of the next 3 gameweeks on the gameweek row so the app
+    can schedule reminders without re-scraping (works even before odds are posted)."""
+    gw = GameWeekTeams.query.first()
+    if not gw:
+        return
+    gw.next_start_time   = get_round_start_time(current_round + 1)
+    gw.next_start_time_2 = get_round_start_time(current_round + 2)
+    gw.next_start_time_3 = get_round_start_time(current_round + 3)
+    db.session.commit()
+
 def generate_teams_auto():
     current_user = User.query.filter_by(username='admin').first()
     if current_user.previous_results is None:
@@ -873,8 +888,8 @@ def generate_teams_auto():
     teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
     ex_points_for_db = {key.split('_')[0]:value for key,value in exp_points.items()}
 
-    _,_,next_start_gameweek,_ = get_gameweek_teams(round + 1)
-    update_gameweek_teams(new_teams, start_gameweek, end_gameweek, next_start_gameweek)
+    update_gameweek_teams(new_teams, start_gameweek, end_gameweek, None)
+    _store_next_start_times(round)
     # Update all users with new teams (example logic)
     gameweek_entry = GameweekStats(
         gameweek=round,
@@ -905,6 +920,7 @@ def generate_teams():
         # Example function call to generate new game week teams
         new_teams,exp_points, start_gameweek, end_gameweek = get_gameweek_teams(round)
         update_gameweek_teams(new_teams, start_gameweek, end_gameweek, None)
+        _store_next_start_times(round)
         teams_for_db = {key.split('_')[0]:value for key,value in new_teams.items()}
         ex_points_for_db = {key.split('_')[0]:value for key,value in exp_points.items()}
 
@@ -1704,26 +1720,25 @@ def fetchNotificationsIOS():
         else:
             current_round = len(json.loads(admin.previous_results)) + 1
 
-    # Fetch future gameweek start times (up to 5, capped at GW 38)
+    # Next 3 gameweek start times come from cached DB columns (populated when a gameweek is
+    # generated), so this endpoint stays fast and reliable instead of re-scraping on every call.
     future_gameweeks = []
-    for offset in range(1, 6):
-        future_round = current_round + offset
-        if future_round > 38:
-            break
-        try:
-            ft = get_next_start_time(future_round)
-            if ft is not None:
-                future_gameweeks.append({
-                    "round": future_round,
-                    "start_time": ft.isoformat()
-                })
-        except Exception:
-            pass  # scraper failure for one round should not block others
+    for offset, st in ((1, gameweek_teams.next_start_time),
+                       (2, gameweek_teams.next_start_time_2),
+                       (3, gameweek_teams.next_start_time_3)):
+        if st is not None:
+            future_gameweeks.append({
+                "round": current_round + offset,
+                "start_time": st.isoformat() + "Z"   # mark as UTC so the app parses it correctly
+            })
+
+    def _iso(dt):
+        return (dt.isoformat() + "Z") if dt is not None else None
 
     return jsonify({
-        "start_time": start_time,
-        "end_time": end_time,
-        "next_start_time": next_start_time,
+        "start_time": _iso(start_time),
+        "end_time": _iso(end_time),
+        "next_start_time": _iso(next_start_time),
         "current_round": current_round,
         "future_gameweeks": future_gameweeks
     })

@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import dateparser
 import logging
+import re
 
 logger = logging.getLogger('golden_picks.scraper')
 
@@ -100,6 +101,37 @@ def get_next_start_time(round):
         return _to_utc(first_game)
     except Exception as e:
         logger.error(f"get_next_start_time failed for round {round}: {e}")
+        return None
+
+def get_round_start_time(round):
+    """Earliest kickoff (UTC, minus 90 min) for a round straight off the fixtures page,
+    parsing dates even when odds aren't posted yet (so it works for rounds 2-3 weeks out)."""
+    try:
+        response = requests.get(FIXTURES_URL, timeout=15)
+        response.raise_for_status()
+        table = BeautifulSoup(response.text, 'html.parser').find('table')
+        if table is None:
+            return None
+        in_round = False
+        dates = []
+        for row in table.find_all('tr'):
+            text = row.get_text(" ", strip=True)
+            if 'Round' in text and len(text) < 40:
+                m = re.search(r'(\d+)\.\s*Round|Round\s*(\d+)', text)
+                in_round = bool(m) and int(m.group(1) or m.group(2)) == round
+                continue
+            if not in_round:
+                continue
+            cell = row.find('td', class_='table-main__datetime')
+            if cell:
+                dt = process_date(cell.get_text(strip=True))
+                if dt is not None:
+                    dates.append(dt)
+        if not dates:
+            return None
+        return _to_utc(min(dates) - pd.Timedelta(minutes=90))
+    except Exception as e:
+        logger.error(f"get_round_start_time failed for round {round}: {e}")
         return None
 
 def get_gameweek_teams(round):
