@@ -58,6 +58,7 @@ CORS(app, resources={r"/*": {"origins": [
     "http://127.0.0.1:*",
 ]}})
 
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)  # app re-logs-in on launch; long-lived so sessions don't expire mid-use
 jwt = JWTManager(app)
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per minute"], storage_uri="memory://")
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -1055,7 +1056,7 @@ def registerIOS():
         return jsonify({"msg": "User successfully registered, please log in."}), 200
 
 @app.route('/save_fcm_tokenIOS', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def save_fcm_token():
     data = request.get_json() or {}
     username = data.get('username') or get_jwt_identity()
@@ -1070,9 +1071,12 @@ def save_fcm_token():
     return jsonify({'ok': True}), 200
 
 @app.route('/createleagueIOS', methods=['POST'])
+@jwt_required()
 def createleagueIOS():
     data = request.json
     username = data.get('username')
+    if get_jwt_identity() != username:
+        return jsonify({"msg": "Unauthorized"}), 403
 
     league_name = data.get('leaguename')
     password = data.get('password')
@@ -1189,7 +1193,7 @@ def loginIOS():
 
 
 @app.route('/choose_teamIOS', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def choose_teamIOS():
     data = request.json
     transformed_team_name = data.get('team_name')
@@ -1273,7 +1277,7 @@ def choose_teamIOS():
 
 
 @app.route('/gd_bonusIOS', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def gd_bonusIOS():
     data = request.json
     username = data.get('username')
@@ -1343,7 +1347,7 @@ def podcast_latest():
     })
 
 @app.route('/handicap_bonusIOS', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def handicap_bonusIOS():
     data = request.json
     username = data.get('username')
@@ -1405,7 +1409,7 @@ def handicap_bonusIOS():
 
 
 @app.route('/doubleupIOS', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def doubleupOS():
     data = request.json
     username = data.get('username')
@@ -1466,7 +1470,7 @@ def doubleupOS():
 
 
 @app.route('/getLeaguesIOS', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_leaguesIOS():
     try:
         # Parse input JSON
@@ -1476,6 +1480,8 @@ def get_leaguesIOS():
         # Validate input
         if not username:
             return jsonify({"error": "Username is required"}), 400
+        if get_jwt_identity() != username:
+            return jsonify({"error": "Unauthorized"}), 403
 
         # Retrieve leagues for the user (mock data for demonstration)
         user = User.query.filter_by(username=username).first()
@@ -1497,6 +1503,7 @@ def get_leaguesIOS():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/unregisterIOS', methods=['POST'])
+@jwt_required()
 def unregisterIOS():
     try:
         data = request.json
@@ -1513,6 +1520,8 @@ def unregisterIOS():
         if user.username == 'admin':
             # admin is the round-counter anchor for the whole game — never delete it
             return jsonify({"message": "Cannot delete the admin account"}), 403
+        if get_jwt_identity() != user.username:
+            return jsonify({"message": "Unauthorized"}), 403
 
         # Get the list of league IDs this user belongs to
         league_ids = json.loads(user.league_ids) if user.league_ids else []
@@ -1539,12 +1548,15 @@ def unregisterIOS():
     
 
 @app.route('/get_previous_picksIOS', methods = ['POST'])
+@jwt_required()
 def get_previous_picksIOS():
     data = request.json
     username = data.get("user")
     user = User.query.filter_by(username=username).first()
-    if not user and "@" in username:
+    if not user and username and "@" in username:
         user = User.query.filter_by(email=username).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
     previous_results_dict = json.loads(user.previous_results or '{}')
     new_results_dict = {}
     for round, round_dict in previous_results_dict.items():
@@ -1569,6 +1581,7 @@ def get_previous_picksIOS():
 
 
 @app.route('/get_league_detailsIOS', methods=['POST'])
+@jwt_required()
 def get_league_details():
     data = request.json
     league_name = data.get("league_name")
@@ -1756,6 +1769,7 @@ def fetchNotificationsIOS():
     })
 
 @app.route('/registerLeagueIOS', methods=['POST'])
+@jwt_required()
 def register_leagueIOS():
     try:
         data = request.get_json()
@@ -1765,6 +1779,8 @@ def register_leagueIOS():
         league_name = data.get('league_name')
         league_password = data.get('league_password')
         username = data.get('username')
+        if get_jwt_identity() != username:
+            return jsonify({"success": False, "message": "Unauthorized"}), 403
         current_user = User.query.filter_by(username=username).first()
         if not current_user and "@" in username:
             current_user = User.query.filter_by(email=username).first()
