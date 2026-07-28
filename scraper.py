@@ -7,12 +7,10 @@ import re
 
 logger = logging.getLogger('golden_picks.scraper')
 
-# Summer testing on Brazil Série B — games now + plays continuously through the 2026 World Cup (no fixture gap).
-# To revert: uncomment the Premier League lines and comment out the Brazilian ones.
-# LEAGUE_PATH = "england/premier-league"
-# LEAGUE_SIZE = 20
-LEAGUE_PATH = "brazil/serie-b"
+LEAGUE_PATH = "england/premier-league"
 LEAGUE_SIZE = 20
+# LEAGUE_PATH = "brazil/serie-b"
+# LEAGUE_SIZE = 20
 FIXTURES_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/fixtures/"
 RESULTS_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/results/"
 
