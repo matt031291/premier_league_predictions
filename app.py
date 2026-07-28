@@ -44,10 +44,10 @@ sentry_dsn = os.environ.get('SENTRY_DSN')
 if sentry_dsn:
     sentry_sdk.init(dsn=sentry_dsn, integrations=[FlaskIntegration()], traces_sample_rate=0.1)
 
-TEAM_MAPS = {"Burnley":"BUR","Sunderland":"SUN","Leeds": "LEE","Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"WOL","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO"}
+TEAM_MAPS = {"Burnley":"BUR","Sunderland":"SUN","Leeds": "LEE","Leicester": "LEI", "ManchesterCity":"MCI","Liverpool":"LIV","WestHam":"WHU","Chelsea":"CHE","Ipswich":"IPS","Arsenal":"ARS","Brentford":"BRE","CrystalPalace":"CRY","Southampton":"SOU","Tottenham":"TOT","Wolves":"WOL","AstonVilla":"AVL","Brighton":"BHA","Fulham":"FUL","Bournemouth":"BOU","Newcastle":"NEW","ManchesterUtd":"MUN","Everton":"EVE","Nottingham":"NFO","Coventry":"COV","Hull":"HUL"}
 REVERSE_TEAM_MAPS = {value:key for key,value in TEAM_MAPS.items()}
 
-TEAM_MAPS_2 = {"Burnley":"Burnley","Sunderland":"Sunderland","Leeds": "Leeds","Leicester": "Leicester", "ManchesterCity":"Man City","Liverpool":"Liverpool","WestHam":"West Ham","Chelsea":"Chelsea","Ipswich":"Ipswitch","Arsenal":"Arsenal","Brentford":"Brentford","CrystalPalace":"Palace","Southampton":"Southampton","Tottenham":"Tottenham","Wolves":"Wolves","AstonVilla":"Villa","Brighton":"Brighton","Fulham":"Fulham","Bournemouth":"Bournemouth","Newcastle":"Newcastle","ManchesterUtd":"Man United","Everton":"Everton","Nottingham":"Forest"}
+TEAM_MAPS_2 = {"Burnley":"Burnley","Sunderland":"Sunderland","Leeds": "Leeds","Leicester": "Leicester", "ManchesterCity":"Man City","Liverpool":"Liverpool","WestHam":"West Ham","Chelsea":"Chelsea","Ipswich":"Ipswitch","Arsenal":"Arsenal","Brentford":"Brentford","CrystalPalace":"Palace","Southampton":"Southampton","Tottenham":"Tottenham","Wolves":"Wolves","AstonVilla":"Villa","Brighton":"Brighton","Fulham":"Fulham","Bournemouth":"Bournemouth","Newcastle":"Newcastle","ManchesterUtd":"Man United","Everton":"Everton","Nottingham":"Forest","Coventry":"Coventry","Hull":"Hull"}
 
 
 app = Flask(__name__)
