@@ -1614,7 +1614,55 @@ def unregisterIOS():
         app.logger.error(f"Error in unregisterIOS: {e}")
         return jsonify({"message": "An internal error occurred"}), 500
 
-    
+
+@app.route('/update_accountIOS', methods=['POST'])
+@jwt_required()
+def update_accountIOS():
+    try:
+        data = request.json
+        username = data.get("user")
+        current_password = data.get("current_password")
+        new_email = data.get("new_email")
+        new_password = data.get("new_password")
+
+        if not username or not current_password:
+            return jsonify({"message": "Username and current password are required"}), 400
+
+        user = User.query.filter_by(username=username).first()
+        if not user and "@" in username:
+            user = User.query.filter_by(email=username).first()
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+
+        if get_jwt_identity() != user.username:
+            return jsonify({"message": "Unauthorized"}), 403
+
+        if not user.check_password(current_password):
+            return jsonify({"message": "Current password is incorrect"}), 403
+
+        if not new_email and not new_password:
+            return jsonify({"message": "Nothing to update"}), 400
+
+        if new_email:
+            existing = User.query.filter_by(email=new_email).first()
+            if existing and existing.id != user.id:
+                return jsonify({"message": "That email is already in use"}), 409
+            user.email = new_email
+
+        if new_password:
+            if len(new_password) < 6:
+                return jsonify({"message": "Password must be at least 6 characters"}), 400
+            user.set_password(new_password)
+
+        db.session.commit()
+
+        return jsonify({"message": "Account updated", "email": user.email}), 200
+
+    except Exception as e:
+        app.logger.error(f"Error in update_accountIOS: {e}")
+        return jsonify({"message": "An internal error occurred"}), 500
+
+
 
 @app.route('/get_previous_picksIOS', methods = ['POST'])
 @jwt_required()
