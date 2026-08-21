@@ -8,7 +8,6 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import logging
-import socket
 import threading
 import numpy as np
 import dateparser
@@ -21,9 +20,6 @@ import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from scraper import get_gameweek_teams, get_results, get_round_scores, get_next_start_time, get_round_start_time
 from datetime import datetime,timedelta
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from itsdangerous import URLSafeTimedSerializer
 import pandas as pd
 
@@ -1815,45 +1811,48 @@ def inverse_transform_match_string(transformed_string):
 
 
 
-_original_getaddrinfo = socket.getaddrinfo
-_smtp_dns_lock = threading.Lock()
-
-
-def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
-    # Render's outbound network has no IPv6 route; smtp.gmail.com resolves to both
-    # AAAA and A records and smtplib picks whichever comes first, so an IPv6 pick
-    # fails immediately with "Network is unreachable". Force IPv4 for this lookup.
-    return _original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+@app.route('/diag_net')
+def diag_net():
+    import socket as _socket
+    import time as _time
+    results = {}
+    for label, host, port in [("smtp587", "smtp.gmail.com", 587), ("smtp465", "smtp.gmail.com", 465), ("https443", "api.sendgrid.com", 443)]:
+        start = _time.monotonic()
+        try:
+            s = _socket.create_connection((host, port), timeout=8)
+            results[label] = {"ok": True, "elapsed": round(_time.monotonic() - start, 2), "local": s.getsockname()}
+            s.close()
+        except Exception as e:
+            results[label] = {"ok": False, "elapsed": round(_time.monotonic() - start, 2), "error": str(e)}
+    try:
+        ip_resp = requests.get("https://api.ipify.org?format=json", timeout=8)
+        results["outbound_ip"] = ip_resp.json()
+    except Exception as e:
+        results["outbound_ip"] = {"error": str(e)}
+    return jsonify(results)
 
 
 def send_email(sender_email, sender_password, receiver_email, subject, body):
-    # Set up the SMTP server
-    smtp_server = "smtp.gmail.com"  # For Gmail
-    smtp_port = 587  # Use 465 for SSL, 587 for TLS
-
-    # Create a MIME object
-    message = MIMEMultipart()
-    message['From'] = sender_email
-    message['To'] = receiver_email
-    message['Subject'] = subject
-
-    # Add the email body to the MIME message
-    message.attach(MIMEText(body, 'plain'))
-
-    # Send the email — log failures instead of swallowing them; never raise (callers are best-effort)
-    # The IPv4-only patch below is process-global, so serialize the connect phase
-    # across threads (reset emails now send on background threads).
+    # sender_password is unused — Render blocks outbound SMTP (587/465) entirely,
+    # even over IPv4, so mail now goes through SendGrid's HTTPS API instead.
     try:
-        with _smtp_dns_lock:
-            socket.getaddrinfo = _getaddrinfo_ipv4_only
-            try:
-                server = smtplib.SMTP(smtp_server, smtp_port, timeout=20)
-            finally:
-                socket.getaddrinfo = _original_getaddrinfo
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-        server.quit()
+        response = requests.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {os.environ['SENDGRID_API_KEY']}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "personalizations": [{"to": [{"email": receiver_email}]}],
+                "from": {"email": sender_email},
+                "subject": subject,
+                "content": [{"type": "text/plain", "value": body}],
+            },
+            timeout=20,
+        )
+        if response.status_code != 202:
+            logger.error(f"Email to {receiver_email} failed: SendGrid {response.status_code} {response.text}")
+            return False
         return True
     except Exception as e:
         logger.error(f"Email to {receiver_email} failed: {e}")
