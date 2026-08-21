@@ -324,6 +324,23 @@ class User(UserMixin, db.Model):
         db.session.commit()
 
 
+def resolve_authorized_user(identifier):
+    """Resolve a client-sent 'username' field (which may actually be a username OR
+    an email — the app sends back whatever the user originally typed at login,
+    including if they logged in with their email) to the User row, and verify it
+    matches the JWT identity (always the canonical username). Returns the User on
+    success, or None if the identifier doesn't resolve or doesn't match the caller."""
+    jwt_identity = get_jwt_identity()
+    if not identifier or not jwt_identity:
+        return None
+    user = User.query.filter(func.lower(User.username) == func.lower(identifier)).first()
+    if not user and "@" in identifier:
+        user = User.query.filter(func.lower(User.email) == func.lower(identifier)).first()
+    if not user or user.username.lower() != jwt_identity.lower():
+        return None
+    return user
+
+
 # Admin model
 class Admin(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1078,7 +1095,7 @@ def save_fcm_token():
     token = data.get('fcm_token')
     if not username or not token:
         return jsonify({'msg': 'username and fcm_token required'}), 400
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
     if not user:
         return jsonify({'msg': 'User not found'}), 404
     user.fcm_token = token
@@ -1090,17 +1107,12 @@ def save_fcm_token():
 def createleagueIOS():
     data = request.json
     username = data.get('username')
-    if get_jwt_identity() != username:
+    current_user = resolve_authorized_user(username)
+    if not current_user:
         return jsonify({"msg": "Unauthorized"}), 403
 
     league_name = data.get('leaguename')
     password = data.get('password')
-    current_user = User.query.filter_by(username=username).first()
-    # First, try to find user by username
-    current_user = User.query.filter_by(username=username).first()
-    # If not found and identifier contains '@', try as email
-    if not current_user and "@" in username:
-        current_user = User.query.filter_by(email=username).first()
     # Check if the username already exists
     if League.query.filter_by(name = league_name).first():
         return jsonify({"msg": "League name already used. \n Please choose a different one."}), 401
@@ -1267,9 +1279,8 @@ def choose_teamIOS():
     transformed_team_name = data.get('team_name')
     username = data.get('username')
 
-    # If JWT is present, verify the identity matches the request
-    jwt_identity = get_jwt_identity()
-    if jwt_identity and jwt_identity != username:
+    user = resolve_authorized_user(username)
+    if not user:
         return jsonify({"msg": "Unauthorized"}), 403
 
     admin = User.query.filter_by(username="admin").first()
@@ -1285,12 +1296,6 @@ def choose_teamIOS():
         return jsonify({"msg": "team not selected"}), 401
 
     team_name = inverse_transform_match_string(transformed_team_name)
-    user = User.query.filter_by(username=username).first()
-    # First, try to find user by username
-    user = User.query.filter_by(username=username).first()
-    # If not found and identifier contains '@', try as email
-    if not user and "@" in username:
-        user = User.query.filter_by(email=username).first()
 
         # Get game week teams
     teams = read_current_gameweek_teams()
@@ -1349,8 +1354,8 @@ def choose_teamIOS():
 def gd_bonusIOS():
     data = request.json
     username = data.get('username')
-    jwt_identity = get_jwt_identity()
-    if jwt_identity and jwt_identity != username:
+    user = resolve_authorized_user(username)
+    if not user:
         return jsonify({"msg": "Unauthorized"}), 403
     gd_bonus = data.get('gd_bonus')
     admin = User.query.filter_by(username="admin").first()
@@ -1361,10 +1366,6 @@ def gd_bonusIOS():
         lock_window = gameweek_teams.start_time - timedelta(minutes=30)
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
-
-    user = User.query.filter_by(username=username).first()
-    if not user and "@" in username:
-        user = User.query.filter_by(email=username).first()
 
     if user.GD_bonus_left > 0:
         user.GD_bonus = gd_bonus
@@ -1419,8 +1420,8 @@ def podcast_latest():
 def handicap_bonusIOS():
     data = request.json
     username = data.get('username')
-    jwt_identity = get_jwt_identity()
-    if jwt_identity and jwt_identity != username:
+    user = resolve_authorized_user(username)
+    if not user:
         return jsonify({"msg": "Unauthorized"}), 403
     handicap_bonus = data.get('handicap_bonus')
     admin = User.query.filter_by(username="admin").first()
@@ -1431,10 +1432,6 @@ def handicap_bonusIOS():
         lock_window = gameweek_teams.start_time - timedelta(minutes=30)
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
-
-    user = User.query.filter_by(username=username).first()
-    if not user and "@" in username:
-        user = User.query.filter_by(email=username).first()
 
     if user.handicap_bonus_left > 0:
         user.handicap_bonus = handicap_bonus
@@ -1481,8 +1478,8 @@ def handicap_bonusIOS():
 def doubleupOS():
     data = request.json
     username = data.get('username')
-    jwt_identity = get_jwt_identity()
-    if jwt_identity and jwt_identity != username:
+    user = resolve_authorized_user(username)
+    if not user:
         return jsonify({"msg": "Unauthorized"}), 403
     doubleup = data.get('doubleUp')
     admin = User.query.filter_by(username="admin").first()
@@ -1494,9 +1491,6 @@ def doubleupOS():
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
-    user = User.query.filter_by(username=username).first()
-    if not user and "@" in username:
-        user = User.query.filter_by(email=username).first()
     if user.doubleupsleft > 0:
         user.doubleup = doubleup
     db.session.commit()
@@ -1548,13 +1542,10 @@ def get_leaguesIOS():
         # Validate input
         if not username:
             return jsonify({"error": "Username is required"}), 400
-        if get_jwt_identity() != username:
+        user = resolve_authorized_user(username)
+        if not user:
             return jsonify({"error": "Unauthorized"}), 403
 
-        # Retrieve leagues for the user (mock data for demonstration)
-        user = User.query.filter_by(username=username).first()
-        if not user and "@" in username:
-            user = User.query.filter_by(email=username).first()
         user_leagues = json.loads(user.league_ids)
 
         user_leagues_str = [str(League.query.get(id).name)  for id in user_leagues]
@@ -1580,15 +1571,15 @@ def unregisterIOS():
         if not username:
             return jsonify({"message": "Username is required"}), 400
 
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
         if not user and "@" in username:
-            user = User.query.filter_by(email=username).first()
+            user = User.query.filter(func.lower(User.email) == func.lower(username)).first()
         if not user:
             return jsonify({"message": "User not found"}), 404
         if user.username == 'admin':
             # admin is the round-counter anchor for the whole game — never delete it
             return jsonify({"message": "Cannot delete the admin account"}), 403
-        if get_jwt_identity() != user.username:
+        if get_jwt_identity().lower() != user.username.lower():
             return jsonify({"message": "Unauthorized"}), 403
 
         # Get the list of league IDs this user belongs to
@@ -1627,13 +1618,13 @@ def update_accountIOS():
         if not username or not current_password:
             return jsonify({"message": "Username and current password are required"}), 400
 
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
         if not user and "@" in username:
-            user = User.query.filter_by(email=username).first()
+            user = User.query.filter(func.lower(User.email) == func.lower(username)).first()
         if not user:
             return jsonify({"message": "User not found"}), 404
 
-        if get_jwt_identity() != user.username:
+        if get_jwt_identity().lower() != user.username.lower():
             return jsonify({"message": "Unauthorized"}), 403
 
         if not user.check_password(current_password):
@@ -1668,9 +1659,9 @@ def update_accountIOS():
 def get_previous_picksIOS():
     data = request.json
     username = data.get("user")
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter(func.lower(User.username) == func.lower(username)).first() if username else None
     if not user and username and "@" in username:
-        user = User.query.filter_by(email=username).first()
+        user = User.query.filter(func.lower(User.email) == func.lower(username)).first()
     if not user:
         return jsonify({"msg": "User not found"}), 404
     previous_results_dict = json.loads(user.previous_results or '{}')
@@ -1893,11 +1884,9 @@ def register_leagueIOS():
         league_name = data.get('league_name')
         league_password = data.get('league_password')
         username = data.get('username')
-        if get_jwt_identity() != username:
+        current_user = resolve_authorized_user(username)
+        if not current_user:
             return jsonify({"success": False, "message": "Unauthorized"}), 403
-        current_user = User.query.filter_by(username=username).first()
-        if not current_user and "@" in username:
-            current_user = User.query.filter_by(email=username).first()
         if not league_name or not league_password:
             return jsonify({"success": False, "message": "League name and password are required"}), 400
 
