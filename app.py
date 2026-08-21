@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1056,8 +1057,8 @@ def registerIOS():
     password = data.get('password')
     email = data.get('email')
 
-    # Check if the username already exists
-    if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+    # Check if the username already exists (case-insensitive)
+    if User.query.filter(func.lower(User.username) == func.lower(username)).first() or User.query.filter(func.lower(User.email) == func.lower(email)).first():
         return jsonify({"msg": "Username or email already used. \n Please choose a different one."}), 401
 
 
@@ -1136,12 +1137,12 @@ def loginIOS():
     teams = read_current_gameweek_teams()
     teams_new_string = {}
 
-    # First, try to find user by username
-    user = User.query.filter_by(username=identifier).first()
+    # First, try to find user by username (case-insensitive)
+    user = User.query.filter(func.lower(User.username) == func.lower(identifier)).first() if identifier else None
     # If not found and identifier contains '@', try as email
     if not user and identifier and "@" in identifier:
-        user = User.query.filter_by(email=identifier).first()
-    
+        user = User.query.filter(func.lower(User.email) == func.lower(identifier)).first()
+
     # No user found
     if not user:
         return jsonify({"msg": "Invalid username"}), 401
