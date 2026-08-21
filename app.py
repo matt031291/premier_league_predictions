@@ -8,6 +8,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import logging
+import socket
 import threading
 import numpy as np
 import dateparser
@@ -1814,6 +1815,17 @@ def inverse_transform_match_string(transformed_string):
 
 
 
+_original_getaddrinfo = socket.getaddrinfo
+_smtp_dns_lock = threading.Lock()
+
+
+def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+    # Render's outbound network has no IPv6 route; smtp.gmail.com resolves to both
+    # AAAA and A records and smtplib picks whichever comes first, so an IPv6 pick
+    # fails immediately with "Network is unreachable". Force IPv4 for this lookup.
+    return _original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+
 def send_email(sender_email, sender_password, receiver_email, subject, body):
     # Set up the SMTP server
     smtp_server = "smtp.gmail.com"  # For Gmail
@@ -1829,8 +1841,15 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
     message.attach(MIMEText(body, 'plain'))
 
     # Send the email — log failures instead of swallowing them; never raise (callers are best-effort)
+    # The IPv4-only patch below is process-global, so serialize the connect phase
+    # across threads (reset emails now send on background threads).
     try:
-        server = smtplib.SMTP(smtp_server, smtp_port)
+        with _smtp_dns_lock:
+            socket.getaddrinfo = _getaddrinfo_ipv4_only
+            try:
+                server = smtplib.SMTP(smtp_server, smtp_port, timeout=20)
+            finally:
+                socket.getaddrinfo = _original_getaddrinfo
         server.starttls()
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, receiver_email, message.as_string())
