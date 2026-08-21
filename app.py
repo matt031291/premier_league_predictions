@@ -1811,27 +1811,6 @@ def inverse_transform_match_string(transformed_string):
 
 
 
-@app.route('/diag_net')
-def diag_net():
-    import socket as _socket
-    import time as _time
-    results = {}
-    for label, host, port in [("smtp587", "smtp.gmail.com", 587), ("smtp465", "smtp.gmail.com", 465), ("https443", "api.sendgrid.com", 443)]:
-        start = _time.monotonic()
-        try:
-            s = _socket.create_connection((host, port), timeout=8)
-            results[label] = {"ok": True, "elapsed": round(_time.monotonic() - start, 2), "local": s.getsockname()}
-            s.close()
-        except Exception as e:
-            results[label] = {"ok": False, "elapsed": round(_time.monotonic() - start, 2), "error": str(e)}
-    try:
-        ip_resp = requests.get("https://api.ipify.org?format=json", timeout=8)
-        results["outbound_ip"] = ip_resp.json()
-    except Exception as e:
-        results["outbound_ip"] = {"error": str(e)}
-    return jsonify(results)
-
-
 def send_email(sender_email, sender_password, receiver_email, subject, body):
     # sender_password is unused — Render blocks outbound SMTP (587/465) entirely,
     # even over IPv4, so mail now goes through SendGrid's HTTPS API instead.
