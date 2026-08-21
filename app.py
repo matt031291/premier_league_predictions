@@ -8,6 +8,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import logging
+import threading
 import numpy as np
 import dateparser
 import math
@@ -1934,8 +1935,15 @@ def send_reset_emailIOS():
         token = s.dumps(email, salt='password-reset-salt')
         reset_url = url_for('reset_password', token=token, _external=True)
 
-        # Send email (example using smtplib)
-        send_email(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD'], user.email, "Premier Leauge Predictions Password Reset", f"Password Reset\n\nClick the link to reset your password: {reset_url}")
+        # Send in the background — the SMTP handshake to Gmail can take 2+ minutes,
+        # which was blocking the whole request and making the app look dead.
+        threading.Thread(
+            target=send_email,
+            args=(os.environ['GMAIL_ADDRESS'], os.environ['GMAIL_APP_PASSWORD'], user.email,
+                  "Premier Leauge Predictions Password Reset",
+                  f"Password Reset\n\nClick the link to reset your password: {reset_url}"),
+            daemon=True,
+        ).start()
 
     # Always return the same response regardless of whether the email exists (no account enumeration)
     return jsonify({"msg": "If that email is registered, a reset link has been sent."}), 200
