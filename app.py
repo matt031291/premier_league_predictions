@@ -1210,7 +1210,11 @@ def loginIOS():
     end_time_utc = ""
     if gameweek_teams:
         if gameweek_teams.start_time:
-            deadline_utc = gameweek_teams.start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+            # +30min compensates for the Flutter app's own stale "lock is 30min before
+            # this" assumption (welcome_view.dart _checkDeadlineExpiry/_formatDeadline),
+            # which pre-dates today's fix making the real deadline = exact kickoff.
+            # Remove this offset once an app update ships without that assumption.
+            deadline_utc = (gameweek_teams.start_time + timedelta(minutes=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
         if gameweek_teams.end_time:
             end_time_utc = gameweek_teams.end_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -1266,7 +1270,11 @@ def refreshIOS():
     end_time_utc = ""
     if gameweek_teams:
         if gameweek_teams.start_time:
-            deadline_utc = gameweek_teams.start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+            # +30min compensates for the Flutter app's own stale "lock is 30min before
+            # this" assumption (welcome_view.dart _checkDeadlineExpiry/_formatDeadline),
+            # which pre-dates today's fix making the real deadline = exact kickoff.
+            # Remove this offset once an app update ships without that assumption.
+            deadline_utc = (gameweek_teams.start_time + timedelta(minutes=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
         if gameweek_teams.end_time:
             end_time_utc = gameweek_teams.end_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
