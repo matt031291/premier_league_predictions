@@ -699,7 +699,7 @@ def keep_alive():
 
     start_time = gameweek_teams.start_time
     end_time = gameweek_teams.end_time
-    deadline = start_time - pd.Timedelta(minutes=30)   # picks lock 30 min before start
+    deadline = start_time   # picks lock exactly at kickoff
     reminder_24h = deadline - pd.Timedelta(hours=24)
     reminder_1h  = deadline - pd.Timedelta(hours=1)
     now = datetime.utcnow()
@@ -729,9 +729,29 @@ def keep_alive():
             return f"failed updating scores: {e}", 500
 
     if now > deadline:
-        logger.info("Lock window reached — locking team choices")
-        lock_team_choices()
-        return "team choices locked", 200
+        row = GameWeekTeams.query.first()
+        if not row:
+            return "I'm alive!", 200
+        original_start = row.start_time
+        # Claim the round immediately — guards against a concurrent /keep-alive
+        # double-locking while the per-user loop below is still running. This is
+        # what caused a real incident: a second call landed mid-loop, saw
+        # team_choice already cleared to None by the first pass for every user,
+        # and wiped everyone's locked_team_choice back to '' as if nobody picked.
+        row.start_time = datetime.utcnow() + timedelta(days=100)
+        db.session.commit()
+        try:
+            logger.info("Lock window reached — locking team choices")
+            lock_team_choices()
+            return "team choices locked", 200
+        except Exception as e:
+            logger.error(f"keep-alive lock failed: {e}", exc_info=True)
+            db.session.rollback()
+            r = GameWeekTeams.query.first()
+            if r:
+                r.start_time = original_start
+                db.session.commit()
+            return f"failed locking teams: {e}", 500
 
     # Fire each reminder once, anywhere in its window — robust to ping cadence, no double-sends.
     if reminder_24h <= now < reminder_1h and not gameweek_teams.reminder_24h_sent:
@@ -1288,7 +1308,7 @@ def choose_teamIOS():
     # Deadline enforcement — reject picks after lock window (30 min before start)
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams and gameweek_teams.start_time:
-        lock_window = gameweek_teams.start_time - timedelta(minutes=30)
+        lock_window = gameweek_teams.start_time  # picks lock exactly at kickoff
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
@@ -1363,7 +1383,7 @@ def gd_bonusIOS():
     # Deadline enforcement
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams and gameweek_teams.start_time:
-        lock_window = gameweek_teams.start_time - timedelta(minutes=30)
+        lock_window = gameweek_teams.start_time  # picks lock exactly at kickoff
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
@@ -1429,7 +1449,7 @@ def handicap_bonusIOS():
     # Deadline enforcement
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams and gameweek_teams.start_time:
-        lock_window = gameweek_teams.start_time - timedelta(minutes=30)
+        lock_window = gameweek_teams.start_time  # picks lock exactly at kickoff
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
@@ -1487,7 +1507,7 @@ def doubleupOS():
     # Deadline enforcement
     gameweek_teams = GameWeekTeams.query.first()
     if gameweek_teams and gameweek_teams.start_time:
-        lock_window = gameweek_teams.start_time - timedelta(minutes=30)
+        lock_window = gameweek_teams.start_time  # picks lock exactly at kickoff
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 

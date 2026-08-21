@@ -14,10 +14,11 @@ LEAGUE_SIZE = 20
 FIXTURES_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/fixtures/"
 RESULTS_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/results/"
 
-# BetExplorer renders fixture times in CET/CEST (its timezone conversion is client-side JS,
-# so a no-JS scrape always gets the European default zone). Convert to naive UTC so the
-# backend — which compares against datetime.utcnow() — gets the real kickoff times.
-SOURCE_TZ = "Europe/Berlin"
+# BetExplorer's England/Premier League page actually renders fixture times in UK local
+# time (confirmed against real kickoffs — e.g. round 1's Friday-night opener shows "20:00"
+# for an actual 20:00 UK kickoff), not CET/CEST as previously assumed. Convert to naive UTC
+# so the backend — which compares against datetime.utcnow() — gets the real kickoff times.
+SOURCE_TZ = "Europe/London"
 
 def _to_utc(ts):
     if ts is None or pd.isna(ts):
@@ -108,14 +109,14 @@ def get_next_start_time(round):
             return None
 
         data['Date'] = data['Date'].apply(process_date)
-        first_game = data['Date'].min() - pd.Timedelta(minutes=90)
+        first_game = data['Date'].min()
         return _to_utc(first_game)
     except Exception as e:
         logger.error(f"get_next_start_time failed for round {round}: {e}")
         return None
 
 def get_round_start_time(round):
-    """Earliest kickoff (UTC, minus 90 min) for a round straight off the fixtures page,
+    """Earliest kickoff (UTC) for a round straight off the fixtures page,
     parsing dates even when odds aren't posted yet (so it works for rounds 2-3 weeks out)."""
     try:
         response = requests.get(FIXTURES_URL, timeout=15)
@@ -140,7 +141,7 @@ def get_round_start_time(round):
                     dates.append(dt)
         if not dates:
             return None
-        return _to_utc(min(dates) - pd.Timedelta(minutes=90))
+        return _to_utc(min(dates))
     except Exception as e:
         logger.error(f"get_round_start_time failed for round {round}: {e}")
         return None
@@ -159,7 +160,7 @@ def get_gameweek_teams(round):
             return {}, {}, None, None
 
         data['Date'] = data['Date'].apply(process_date)
-        first_game = _to_utc(data['Date'].min() - pd.Timedelta(minutes=90))
+        first_game = _to_utc(data['Date'].min())
         last_game = _to_utc(data['Date'].max() + pd.Timedelta(minutes=240))
 
         data[['home1','away1']]  = data['Match'].apply(get_teams).apply(pd.Series)
