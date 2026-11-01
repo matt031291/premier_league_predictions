@@ -438,11 +438,13 @@ def lock_team_choices():
             if cost > 0 and user.gold >= cost:
                 user.gold -= cost
                 user.locked_team_choice = user.team_choice
-                if user.doubleup:
+                if user.doubleup and user.doubleupsleft > 0:
                     if user.gold >= cost:
                         user.gold -= cost
                     else:
                         user.doubleup = False
+                else:
+                    user.doubleup = False
             else:
                 user.locked_team_choice = None
         else:
@@ -478,6 +480,8 @@ def update_scores():
 
     winner_scores = get_results()
     round_scores = get_round_scores(current_round)
+    if not winner_scores or not round_scores:
+        raise RuntimeError(f"no results scraped for round {current_round}; refusing to score")
     b = {REVERSE_TEAM_MAPS.get(i['team1'], i['team1']):(points_from_GD(i['score1']-i['score2'])) for i in round_scores}
     c = {REVERSE_TEAM_MAPS.get(i['team2'], i['team2']):(points_from_GD(i['score2']-i['score1'])) for i in round_scores}
     scores_for_db = {**c,**b}
@@ -571,13 +575,19 @@ def update_scores():
                 else:
                     push_queue.append((user.fcm_token, f'GW{current_round} Result', f'{team_name} lost. 0pts this week'))
         elif user.locked_team_choice is not None:
-            if user.doubleup:
+            use_dj = bool(user.doubleup and user.doubleupsleft > 0.5)
+            use_gd = bool(user.GD_bonus and user.GD_bonus_left > 0.5)
+            use_hc = bool(user.handicap_bonus and user.handicap_bonus_left > 0.5)
+            if use_dj:
                 user.doubleupsleft -= 1
-            if user.GD_bonus:
+            if use_gd:
                 user.GD_bonus_left -= 1
-            if user.handicap_bonus:
+            if use_hc:
                 user.handicap_bonus_left -= 1
-            user.add_delayed_matches(user.locked_team_choice, user.doubleup,user.GD_bonus, user.handicap_bonus)
+            user.add_delayed_matches(user.locked_team_choice, use_dj, use_gd, use_hc)
+            user.doubleup = False
+            user.GD_bonus = False
+            user.handicap_bonus = False
         elif user.username != 'admin' and user.fcm_token:
             push_queue.append((user.fcm_token, f'GW{current_round} Results 📊', 'Scores are in — check your result!'))
         user.team_choice = None
@@ -648,8 +658,7 @@ def update_doubleup():
     doubleup_state = request.json.get('doubleup')
     
     # Assuming current_user is logged in
-    if current_user.doubleupsleft >0:
-        current_user.doubleup = doubleup_state
+    current_user.doubleup = bool(doubleup_state) and current_user.doubleupsleft > 0
     
     # Save to the database
     db.session.commit()
@@ -662,8 +671,7 @@ def update_gdbonus():
     gdbonus_state = request.json.get('gdbonus')
     
     # Assuming current_user is logged in
-    if current_user.GD_bonus_left > 0:
-        current_user.GD_bonus = gdbonus_state
+    current_user.GD_bonus = bool(gdbonus_state) and current_user.GD_bonus_left > 0
     
     # Save to the database
     db.session.commit()
@@ -1023,8 +1031,12 @@ def update_scores_route():
 @login_required
 def lock_team_choices_route():
     if current_user.username == 'admin':
-        lock_team_choices()
-        flash('Team choices locked successfully.', 'success')
+        gw = GameWeekTeams.query.first()
+        if gw and gw.start_time and gw.start_time > datetime.utcnow() + timedelta(days=50):
+            flash('Teams are already locked for this round; not locking again.', 'error')
+        else:
+            lock_team_choices()
+            flash('Team choices locked successfully.', 'success')
     else:
         flash('Unauthorized access.', 'error')
 
@@ -1395,8 +1407,7 @@ def gd_bonusIOS():
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
-    if user.GD_bonus_left > 0:
-        user.GD_bonus = gd_bonus
+    user.GD_bonus = bool(gd_bonus) and user.GD_bonus_left > 0
     db.session.commit()
         # Get game week teams
     teams = read_current_gameweek_teams()
@@ -1461,8 +1472,7 @@ def handicap_bonusIOS():
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
-    if user.handicap_bonus_left > 0:
-        user.handicap_bonus = handicap_bonus
+    user.handicap_bonus = bool(handicap_bonus) and user.handicap_bonus_left > 0
     db.session.commit()
         # Get game week teams
     teams = read_current_gameweek_teams()
@@ -1519,8 +1529,7 @@ def doubleupOS():
         if datetime.utcnow() > lock_window:
             return jsonify({"msg": "Deadline has passed. Picks are locked.", "deadline_passed": True}), 403
 
-    if user.doubleupsleft > 0:
-        user.doubleup = doubleup
+    user.doubleup = bool(doubleup) and user.doubleupsleft > 0
     db.session.commit()
         # Get game week teams
     teams = read_current_gameweek_teams()
