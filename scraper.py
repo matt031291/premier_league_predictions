@@ -14,18 +14,15 @@ LEAGUE_SIZE = 20
 FIXTURES_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/fixtures/"
 RESULTS_URL = f"https://www.betexplorer.com/football/{LEAGUE_PATH}/results/"
 
-# BetExplorer's England/Premier League page actually renders fixture times in UK local
-# time (confirmed against real kickoffs — e.g. round 1's Friday-night opener shows "20:00"
-# for an actual 20:00 UK kickoff), not CET/CEST as previously assumed. Convert to naive UTC
-# so the backend — which compares against datetime.utcnow() — gets the real kickoff times.
-SOURCE_TZ = "Europe/London"
+# BetExplorer renders fixture times at a fixed UTC+1 with no DST: it matched UK local time
+# in summer (BST) but runs an hour ahead of the UK once clocks go back (GMT). Subtract a
+# flat hour to get naive UTC, which is what the backend compares against datetime.utcnow().
+SOURCE_UTC_OFFSET = pd.Timedelta(hours=1)
 
 def _to_utc(ts):
     if ts is None or pd.isna(ts):
         return ts
-    return (pd.Timestamp(ts)
-            .tz_localize(SOURCE_TZ, ambiguous=True, nonexistent="shift_forward")
-            .tz_convert("UTC").tz_localize(None).to_pydatetime())
+    return (pd.Timestamp(ts) - SOURCE_UTC_OFFSET).to_pydatetime()
 
 def _header_round(text):
     """Return the round number if `text` is a round-header row (e.g. '11. Round'), else None.
