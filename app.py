@@ -1734,7 +1734,7 @@ def get_league_details():
     page = int(data.get("page", 1))
     per_page = 10  # Number of rows per page
     if league_name == "Worldwide":
-        users = User.query.order_by(User.score.desc(), User.gold.desc()).all()  # Fetch all users
+        users = User.query.order_by(User.score.desc(), User.gold.desc(), User.id).all()  # Fetch all users
     else:
         # Fetch league from the database
         league = League.query.filter_by(name=league_name).first()
@@ -1743,7 +1743,7 @@ def get_league_details():
 
         # Fetch users in the league
         user_ids = json.loads(league.user_ids) if league.user_ids else []
-        users = User.query.filter(User.id.in_(user_ids)).order_by(User.score.desc(), User.gold.desc()).all()
+        users = User.query.filter(User.id.in_(user_ids)).order_by(User.score.desc(), User.gold.desc(), User.id).all()
 
     # Prepare the paginated member list
     total_members = len(users)
@@ -1770,7 +1770,7 @@ def get_league_details():
             shortened_team_choice = ''
         members.append({
             "username": user.username,
-            "points": round(user.score,1),
+            "points": round(user.score,1) + user.gold / 1e7,  # sub-display gold tiebreak: the app re-sorts by points, then name
             "gold": user.gold,
             "goal_difference": user.gd,
             "locked_team": shortened_team_choice
